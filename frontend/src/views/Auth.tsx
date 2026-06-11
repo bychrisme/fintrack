@@ -7,7 +7,6 @@ export const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState('USER');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +19,7 @@ export const Auth: React.FC = () => {
       if (isLogin) {
         await login({ email, password });
       } else {
-        await register({ email, password, name, role });
+        await register({ email, password, name });
       }
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue');
@@ -116,22 +115,6 @@ export const Auth: React.FC = () => {
               required
             />
           </div>
-
-          {!isLogin && (
-            <div className="form-group">
-              <label htmlFor="role">Rôle de l'utilisateur</label>
-              <select
-                id="role"
-                className="form-control"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                <option value="USER">Utilisateur Simple</option>
-                <option value="FAMILY">Membre de Famille</option>
-                <option value="ADMIN">Administrateur</option>
-              </select>
-            </div>
-          )}
 
           <button
             type="submit"

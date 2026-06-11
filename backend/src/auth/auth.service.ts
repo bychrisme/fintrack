@@ -26,7 +26,7 @@ export class AuthService {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
-        role: dto.role || 'USER',
+        role: 'USER',
       },
       select: {
         id: true,

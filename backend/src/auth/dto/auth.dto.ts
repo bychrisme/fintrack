@@ -14,9 +14,6 @@ export class RegisterDto {
   @IsOptional()
   name?: string;
 
-  @IsString()
-  @IsOptional()
-  role?: string; // USER, ADMIN, FAMILY
 }
 
 export class LoginDto {

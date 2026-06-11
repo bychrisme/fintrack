@@ -20,10 +20,9 @@ Assurez-vous que votre serveur (VPS Linux / Cloud) dispose des outils suivants :
 ## 🚀 Étapes de Déploiement
 
 ### 1. Préparation du répertoire de production
-Téléchargez le code source sur votre serveur de production (dans `/var/www/fintrack` par exemple) :
+Accédez au répertoire de votre projet sur votre serveur (par exemple `/var/www/bychrisme/fintrack/backend`) :
 ```bash
-git clone <URL_VOTRE_DEPOT> fintrack
-cd fintrack/backend
+cd /var/www/bychrisme/fintrack/backend
 ```
 
 ### 2. Installation des Dépendances

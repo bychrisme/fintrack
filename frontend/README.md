@@ -16,45 +16,45 @@ Le frontend étant une application monopage (SPA) statique après compilation, v
 ## 🚀 Étapes de Déploiement
 
 ### 1. Compilation des Fichiers Statiques
-Dans votre répertoire frontend (sur votre serveur de build ou directement en production) :
+Dans votre répertoire frontend sur votre serveur de production :
 ```bash
-cd fintrack/frontend
+cd /var/www/bychrisme/fintrack/frontend
 npm install
 ```
 
 Configurez l'URL publique de votre API backend lors de la compilation. Le compilateur Vite injectera cette variable d'environnement :
 ```bash
 # Lancez le build de production
-VITE_API_URL="https://votre-domaine.com/api" npm run build
+VITE_API_URL="https://fintrack.bychrisme.dev/api" npm run build
 ```
 Cette commande génère un répertoire `dist/` contenant les fichiers HTML, CSS et JavaScript compilés, optimisés et minifiés.
 
 ---
 
 ### 2. Configuration du Serveur Web Nginx
-Déplacez ou pointez votre configuration Nginx vers le dossier `/var/www/fintrack/frontend/dist` (ou le chemin où se trouvent vos fichiers compilés).
+Déplacez ou pointez votre configuration Nginx vers le dossier `/var/www/bychrisme/fintrack/frontend/dist`.
 
 Créez un nouveau bloc de configuration Nginx :
 ```bash
 sudo nano /etc/nginx/sites-available/fintrack
 ```
 
-Ajoutez la configuration ci-dessous (en remplaçant `votre-domaine.com` par votre propre nom de domaine) :
+Ajoutez la configuration ci-dessous :
 ```nginx
 server {
     listen 80;
-    server_name votre-domaine.com;
+    server_name fintrack.bychrisme.dev www.fintrack.bychrisme.dev;
 
     # 1. Servir le frontend React (SPA)
     location / {
-        root /var/www/fintrack/frontend/dist;
+        root /var/www/bychrisme/fintrack/frontend/dist;
         index index.html;
         try_files $uri $uri/ /index.html;
     }
 
-    # 2. Proxy inverse vers l'API backend NestJS (tournant sur le port 3000)
+    # 2. Proxy inverse vers l'API backend NestJS (tournant sur le port 3001)
     location /api/ {
-        proxy_pass http://localhost:3000/;
+        proxy_pass http://localhost:3001/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -85,7 +85,7 @@ sudo snap install --classic certbot
 sudo ln -s /snap/bin/certbot /usr/bin/certbot
 
 # Obtention du certificat SSL
-sudo certbot --nginx -d votre-domaine.com
+sudo certbot --nginx -d fintrack.bychrisme.dev
 ```
 
 Certbot modifiera automatiquement votre fichier de configuration Nginx pour rediriger le trafic HTTP (port 80) vers HTTPS (port 443) de manière sécurisée.
