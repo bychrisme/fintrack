@@ -27,9 +27,9 @@ cd fintrack/backend
 ```
 
 ### 2. Installation des Dépendances
-Installez les packages requis (y compris les dépendances de développement nécessaires à la compilation TypeScript) :
+Installez les packages requis (en utilisant `--legacy-peer-deps` pour éviter les conflits de dépendances internes NestJS) :
 ```bash
-npm install
+npm install --legacy-peer-deps
 ```
 
 ### 3. Configuration de l'Environnement (`.env`)
@@ -114,34 +114,48 @@ Depuis la racine du dossier `backend/` :
 docker build -t fintrack-backend .
 ```
 
-### 2. Lancer le conteneur NestJS connecté à un PostgreSQL externe
-Pour démarrer uniquement le backend Dockerisé connecté à une base de données PostgreSQL distante ou pré-existante, exécutez la commande suivante :
+### 2. Options de Déploiement :
+
+#### Option A : Architecture Hybride (Recommandé)
+Vous pouvez faire tourner uniquement la base de données PostgreSQL dans un conteneur Docker et exécuter l'API NestJS directement sur le serveur avec PM2.
+
+**1. Démarrer uniquement la base de données PostgreSQL** :
 ```bash
-docker run -d \
-  --name fintrack-api \
-  -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:password@hostname:5432/dbname?schema=public" \
-  -e JWT_SECRET="remplacez_ceci_par_une_cle_secrete_longue_et_securisee" \
-  fintrack-backend
+# Dans le dossier backend/ (où se trouve docker-compose.yml)
+docker compose up -d postgres
 ```
 
-### 3. Exécuter avec Docker Compose (Recommandé)
-Le projet intègre un fichier `docker-compose.yml` complet à la racine du projet qui lance simultanément l'API NestJS et un serveur de base de données PostgreSQL persistant.
+**2. Configurer le backend** :
+Modifiez le fichier `backend/.env` pour vous connecter à la base de données PostgreSQL exposée sur `localhost:5432` :
+```env
+DATABASE_URL="postgresql://fintrack_user:fintrack_production_password_change_me@localhost:5432/fintrack_db?schema=public"
+```
 
-Pour démarrer l'ensemble des services :
+**3. Initialiser et démarrer l'API** :
 ```bash
-# À la racine globale du projet (où se trouve docker-compose.yml)
+npm install --legacy-peer-deps
+npx prisma generate
+npx prisma db push
+npx ts-node prisma/seed.ts  # (Optionnel) Pour importer l'apprentissage OCR
+npm run build
+pm2 start dist/main.js --name "fintrack-backend"
+```
+
+#### Option B : Architecture Tout-en-un (Docker Compose)
+Pour exécuter à la fois l'API et la base de données PostgreSQL dans des conteneurs séparés :
+
+**1. Lancer les conteneurs** :
+```bash
+# Dans le dossier backend/
 docker compose up -d
 ```
 
-Le service backend utilise un script de démarrage qui attend automatiquement que le conteneur PostgreSQL soit actif et à l'écoute sur le port `5432` avant d'appliquer les schémas Prisma (`npx prisma db push`) et de lancer l'API.
-
-Pour consulter l'état des services et les logs :
+**2. Gérer les conteneurs** :
 ```bash
 # Voir l'état des conteneurs
 docker compose ps
 
-# Voir les logs en temps réel de l'API
+# Voir les logs de l'API en temps réel
 docker compose logs -f backend
 ```
 

@@ -37,7 +37,7 @@ Pour lancer l'application localement sur votre machine :
 ### 1. Démarrer le Backend (API)
 ```bash
 cd backend
-npm install
+npm install --legacy-peer-deps
 npx prisma generate
 npx prisma db push
 npx ts-node prisma/seed.ts # Injecte les données de démonstration (facultatif)
@@ -62,11 +62,20 @@ Deux guides détaillés sont disponibles dans les dossiers respectifs :
 * Pour déployer l'API (PM2, variables d'environnement) : Consulter [backend/README.md](file:///c:/Users/LENOVO/Documents/Projet%20GESFIN/backend/README.md)
 * Pour compiler et servir le client (Nginx, HTTPS, SSL Certbot) : Consulter [frontend/README.md](file:///c:/Users/LENOVO/Documents/Projet%20GESFIN/frontend/README.md)
 
-### Déploiement Complet et Rapide via Docker (Recommandé)
-Le projet intègre un fichier `docker-compose.yml` à la racine pour lancer le backend et une base de données PostgreSQL de production en une seule commande :
+### Options de Déploiement :
 
+#### Option A : Déploiement Hybride (Recommandé - PostgreSQL dans Docker, API sur l'Hôte)
+Vous pouvez faire tourner uniquement la base de données PostgreSQL dans un conteneur Docker et exécuter l'API NestJS directement sur le serveur avec PM2 :
 ```bash
-# Lancer les conteneurs PostgreSQL et API NestJS en arrière-plan
+# 1. Démarrer uniquement la base de données PostgreSQL
+docker compose up -d postgres
+
+# 2. Configurer le backend (.env) pour se connecter à localhost:5432 et démarrer avec PM2
+```
+
+#### Option B : Déploiement Tout-en-un (Docker Compose)
+Pour lancer à la fois le backend et la base de données PostgreSQL dans des conteneurs isolés :
+```bash
 docker compose up -d
 ```
 Les données de la base de données PostgreSQL sont persistées de manière sécurisée via un volume Docker nommé `pgdata`.

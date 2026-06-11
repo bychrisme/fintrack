@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL de Production
+  postgres:
+    image: postgres:16-alpine
+    container_name: fintrack-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: fintrack_user
+      POSTGRES_PASSWORD: fintrack_production_password_change_me
+      POSTGRES_DB: fintrack_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Backend NestJS de Production
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fintrack-backend
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://fintrack_user:fintrack_production_password_change_me@postgres:5432/fintrack_db?schema=public
+      JWT_SECRET: remplacez_ceci_par_une_cle_secrete_longue_et_securisee
+    # Attente que PostgreSQL soit prêt
+    command: >
+      sh -c "
+        until nc -z postgres 5432; do
+          echo 'Waiting for PostgreSQL database to start...';
+          sleep 2;
+        done;
+        npx prisma db push &&
+        node dist/main.js
+      "
+
+volumes:
+  pgdata:
+    driver: local
