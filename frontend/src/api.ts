@@ -2,7 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Helper to get authorization headers
 const getHeaders = (hasBody: boolean) => {
-  const token = localStorage.getItem('gesfin_token');
+  const token = localStorage.getItem('fintrack_token');
   const headers: Record<string, string> = {};
   if (hasBody) {
     headers['Content-Type'] = 'application/json';
