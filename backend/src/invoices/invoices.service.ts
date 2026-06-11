@@ -441,6 +441,7 @@ export class InvoicesService {
     // Check OcrStoreMap in database
     const cleanTextNoSpaces = lowerText.replace(/\s+/g, '');
     const ocrStoreMaps = await this.prisma.ocrStoreMap.findMany({
+      where: userId ? { store: { userId } } : undefined,
       include: { store: true }
     });
     for (const map of ocrStoreMaps) {
@@ -454,7 +455,9 @@ export class InvoicesService {
 
     // If not found in maps, check default stores in database
     if (!storeId) {
-      const stores = await this.prisma.store.findMany();
+      const stores = await this.prisma.store.findMany({
+        where: userId ? { userId } : undefined,
+      });
       for (const store of stores) {
         const cleanStoreName = store.name.toLowerCase().replace(/\s+/g, '');
         if (cleanTextNoSpaces.includes(cleanStoreName)) {
@@ -468,7 +471,10 @@ export class InvoicesService {
     // Direct match for Nero -> No Frills (common OCR misread of No Frills)
     if (!storeId && cleanTextNoSpaces.includes('nero')) {
       const noFrills = await this.prisma.store.findFirst({
-        where: { name: { contains: 'No Frills', mode: 'insensitive' } }
+        where: {
+          name: { contains: 'No Frills', mode: 'insensitive' },
+          userId: userId || undefined,
+        }
       });
       if (noFrills) {
         storeId = noFrills.id;
@@ -478,7 +484,9 @@ export class InvoicesService {
 
     // Default to first store if none detected
     if (!storeId) {
-      const firstStore = await this.prisma.store.findFirst();
+      const firstStore = await this.prisma.store.findFirst({
+        where: userId ? { userId } : undefined,
+      });
       storeId = firstStore?.id || '';
       detectedStoreName = firstStore?.name || 'Inconnu';
     }

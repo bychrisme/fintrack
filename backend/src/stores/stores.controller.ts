@@ -1,9 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { StoresService } from './stores.service';
 import { CreateStoreDto, UpdateStoreDto } from './dto/store.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('stores')
 @UseGuards(JwtAuthGuard)
@@ -11,38 +9,32 @@ export class StoresController {
   constructor(private readonly storesService: StoresService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles('ADMIN') // Only admins can create stores
-  create(@Body() dto: CreateStoreDto) {
-    return this.storesService.create(dto);
+  create(@Body() dto: CreateStoreDto, @Req() req: any) {
+    return this.storesService.create(dto, req.user.id);
   }
 
   @Get()
-  findAll() {
-    return this.storesService.findAll();
+  findAll(@Req() req: any) {
+    return this.storesService.findAll(req.user.id);
   }
 
   @Get('stats')
-  getStoreStats() {
-    return this.storesService.getStoreStats();
+  getStoreStats(@Req() req: any) {
+    return this.storesService.getStoreStats(req.user.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.storesService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.storesService.findOne(id, req.user.id);
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
-  @Roles('ADMIN')
-  update(@Param('id') id: string, @Body() dto: UpdateStoreDto) {
-    return this.storesService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateStoreDto, @Req() req: any) {
+    return this.storesService.update(id, dto, req.user.id);
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('ADMIN')
-  remove(@Param('id') id: string) {
-    return this.storesService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.storesService.remove(id, req.user.id);
   }
 }

@@ -125,12 +125,10 @@ export const Stores: React.FC = () => {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Analyse par Magasin</h1>
           <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Comparez le ticket moyen, les dépenses totales et les produits préférés par enseigne.</p>
         </div>
-        {user?.role === 'ADMIN' && (
-          <button onClick={openAddModal} className="btn btn-primary" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <Plus size={16} />
-            Ajouter un magasin
-          </button>
-        )}
+        <button onClick={openAddModal} className="btn btn-primary" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <Plus size={16} />
+          Ajouter un magasin
+        </button>
       </div>
 
       {storeStats.length === 0 ? (
@@ -162,16 +160,14 @@ export const Stores: React.FC = () => {
                   </div>
                 </div>
 
-                {user?.role === 'ADMIN' && (
-                  <div style={{ display: 'flex', gap: '0.25rem' }}>
-                    <button onClick={() => openEditModal(store)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--muted))' }} title="Modifier">
-                      <Edit size={15} />
-                    </button>
-                    <button onClick={() => handleDeleteStore(store.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--destructive))' }} title="Supprimer">
-                      <Trash size={15} />
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <button onClick={() => openEditModal(store)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--muted))' }} title="Modifier">
+                    <Edit size={15} />
+                  </button>
+                  <button onClick={() => handleDeleteStore(store.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--destructive))' }} title="Supprimer">
+                    <Trash size={15} />
+                  </button>
+                </div>
               </div>
 
               {/* Financial indicators */}

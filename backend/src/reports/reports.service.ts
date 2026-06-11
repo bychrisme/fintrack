@@ -26,6 +26,7 @@ export class ReportsService {
 
     if (cleanType === 'stores') {
       const stores = await this.prisma.store.findMany({
+        where: { userId },
         include: {
           invoices: {
             where: { userId },

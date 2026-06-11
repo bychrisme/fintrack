@@ -85,7 +85,7 @@ async function main() {
   console.log('Categories and subcategories created.');
 
   // 4. Create Stores
-  const storesData = [
+  const baseStores = [
     { name: 'Walmart', city: 'Montréal', province: 'QC', country: 'Canada', address: '5400 Rue Jean-Talon O', phone: '514-737-1234', website: 'walmart.ca', type: 'SUPERMARKET' },
     { name: 'Costco', city: 'Brossard', province: 'QC', country: 'Canada', address: '9430 Boul de Rome', phone: '450-444-1234', website: 'costco.ca', type: 'SUPERMARKET' },
     { name: 'No Frills', city: 'Toronto', province: 'ON', country: 'Canada', address: '372 Pacific Ave', phone: '416-535-1234', website: 'nofrills.ca', type: 'SUPERMARKET' },
@@ -95,9 +95,30 @@ async function main() {
   ];
 
   const storesMap: Record<string, string> = {};
-  for (const store of storesData) {
-    const created = await prisma.store.create({ data: store });
-    storesMap[store.name] = created.id;
+  
+  // Seed stores for admin
+  for (const store of baseStores) {
+    await prisma.store.create({
+      data: { ...store, userId: admin.id }
+    });
+  }
+
+  // Seed stores for dad & mom as needed for invoices
+  const dadStores = ['Walmart', 'Costco', 'Canadian Tire', 'Shell'];
+  const momStores = ['No Frills', 'Pharmaprix'];
+
+  for (const store of baseStores) {
+    if (dadStores.includes(store.name)) {
+      const created = await prisma.store.create({
+        data: { ...store, userId: dad.id }
+      });
+      storesMap[store.name] = created.id;
+    } else if (momStores.includes(store.name)) {
+      const created = await prisma.store.create({
+        data: { ...store, userId: mom.id }
+      });
+      storesMap[store.name] = created.id;
+    }
   }
 
   console.log('Stores created.');

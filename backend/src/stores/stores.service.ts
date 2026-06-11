@@ -6,30 +6,40 @@ import { CreateStoreDto, UpdateStoreDto } from './dto/store.dto';
 export class StoresService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateStoreDto) {
+  async create(dto: CreateStoreDto, userId: string) {
     const existing = await this.prisma.store.findUnique({
-      where: { name: dto.name },
+      where: {
+        userId_name: {
+          userId,
+          name: dto.name,
+        },
+      },
     });
     if (existing) {
       throw new ConflictException('Un magasin avec ce nom existe déjà');
     }
 
     return this.prisma.store.create({
-      data: dto,
+      data: {
+        ...dto,
+        userId,
+      },
     });
   }
 
-  async findAll() {
+  async findAll(userId: string) {
     return this.prisma.store.findMany({
+      where: { userId },
       orderBy: { name: 'asc' },
     });
   }
 
-  async findOne(id: string) {
-    const store = await this.prisma.store.findUnique({
-      where: { id },
+  async findOne(id: string, userId: string) {
+    const store = await this.prisma.store.findFirst({
+      where: { id, userId },
       include: {
         invoices: {
+          where: { userId },
           take: 5,
           orderBy: { date: 'desc' },
           select: { id: true, invoiceNumber: true, date: true, totalAmount: true },
@@ -42,11 +52,16 @@ export class StoresService {
     return store;
   }
 
-  async update(id: string, dto: UpdateStoreDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdateStoreDto, userId: string) {
+    await this.findOne(id, userId);
     if (dto.name) {
       const existing = await this.prisma.store.findUnique({
-        where: { name: dto.name },
+        where: {
+          userId_name: {
+            userId,
+            name: dto.name,
+          },
+        },
       });
       if (existing && existing.id !== id) {
         throw new ConflictException('Un magasin avec ce nom existe déjà');
@@ -59,17 +74,19 @@ export class StoresService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId);
     return this.prisma.store.delete({
       where: { id },
     });
   }
 
-  async getStoreStats() {
+  async getStoreStats(userId: string) {
     const stores = await this.prisma.store.findMany({
+      where: { userId },
       include: {
         invoices: {
+          where: { userId },
           select: {
             totalAmount: true,
             items: {

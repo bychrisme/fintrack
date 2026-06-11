@@ -23,11 +23,12 @@ model User {
   invoices  Invoice[]
   budgets   Budget[]
   products  Product[]
+  stores    Store[]
 }
 
 model Store {
   id         String     @id @default(uuid())
-  name       String     @unique
+  name       String
   address    String?
   city       String
   province   String
@@ -37,8 +38,12 @@ model Store {
   type       String     @default("SUPERMARKET") // SUPERMARKET, PHARMACY, HARDWARE, GAS_STATION, RESTAURANT, SPECIALIZED, OTHER
   invoices   Invoice[]
   ocrMaps    OcrStoreMap[]
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
+
+  @@unique([userId, name])
 }
 
 model Category {
