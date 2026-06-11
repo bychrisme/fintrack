@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  name      String?
+  role               String     @default("USER") // USER, ADMIN, FAMILY
+  currency           String     @default("$")
+  defaultPaymentMode String     @default("DEBIT_CARD")
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  invoices  Invoice[]
+  budgets   Budget[]
+  products  Product[]
+}
+
+model Store {
+  id         String     @id @default(uuid())
+  name       String     @unique
+  address    String?
+  city       String
+  province   String
+  country    String
+  phone      String?
+  website    String?
+  type       String     @default("SUPERMARKET") // SUPERMARKET, PHARMACY, HARDWARE, GAS_STATION, RESTAURANT, SPECIALIZED, OTHER
+  invoices   Invoice[]
+  ocrMaps    OcrStoreMap[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Category {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  color       String        // CSS Color value (HSL/Hex)
+  icon        String        // Lucide icon name
+  parentId    String?
+  parent      Category?     @relation("SubCategories", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[]    @relation("SubCategories")
+  items       InvoiceItem[]
+  products    Product[]
+  budgets     Budget[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  invoiceNumber   String
+  date            DateTime      @default(now())
+  paymentMode     String        @default("DEBIT_CARD") // CASH, DEBIT_CARD, CREDIT_CARD, WIRE_TRANSFER, OTHER
+  totalAmount     Float
+  totalTaxes      Float
+  globalDiscounts Float         @default(0.0)
+  comments        String?
+  attachmentUrl   String?
+  storeId         String
+  store           Store         @relation(fields: [storeId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           InvoiceItem[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id           String      @id @default(uuid())
+  productName  String
+  categoryId   String
+  category     Category    @relation(fields: [categoryId], references: [id])
+  quantity     Float       @default(1.0)
+  unit         String      @default("UNIT") // UNIT, KG, G, LITRE, ML, PACK, BOX, OTHER
+  unitPrice    Float
+  totalPrice   Float
+  taxRate      Float       @default(0.0)
+  discount     Float       @default(0.0)
+  netPrice     Float
+  brand        String?
+  barcode      String?
+  invoiceId    String
+  invoice      Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([productName])
+}
+
+model Budget {
+  id         String    @id @default(uuid())
+  amount     Float
+  month      Int       // 1-12
+  year       Int
+  categoryId String?   // Null means global budget
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, month, year, categoryId])
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, name])
+}
+
+model OcrProductMap {
+  id         String   @id @default(uuid())
+  rawName    String   @unique
+  mappedName String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model OcrStoreMap {
+  id         String   @id @default(uuid())
+  rawName    String   @unique
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
