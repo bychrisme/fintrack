@@ -6,7 +6,7 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter() as any
+    new FastifyAdapter({ bodyLimit: 52428800 }) as any
   );
 
   // Enable CORS
