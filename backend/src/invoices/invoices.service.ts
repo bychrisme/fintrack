@@ -115,8 +115,8 @@ export class InvoicesService {
     startDate?: string;
     endDate?: string;
     paymentMode?: string;
-  }) {
-    const where: any = {};
+  }, userId: string) {
+    const where: any = { userId };
 
     if (query.storeId) {
       where.storeId = query.storeId;
@@ -170,9 +170,9 @@ export class InvoicesService {
     });
   }
 
-  async findOne(id: string) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id },
+  async findOne(id: string, userId: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, userId },
       include: {
         store: true,
         items: {
@@ -186,8 +186,8 @@ export class InvoicesService {
     return invoice;
   }
 
-  async update(id: string, dto: UpdateInvoiceDto) {
-    const currentInvoice = await this.findOne(id);
+  async update(id: string, dto: UpdateInvoiceDto, userId: string) {
+    const currentInvoice = await this.findOne(id, userId);
 
     return this.prisma.$transaction(async (tx) => {
       const globalDiscounts = dto.globalDiscounts ?? currentInvoice.globalDiscounts;
@@ -316,8 +316,8 @@ export class InvoicesService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId);
     return this.prisma.invoice.delete({
       where: { id },
     });
@@ -881,10 +881,11 @@ export class InvoicesService {
     }));
   }
 
-  async bulkDelete(ids: string[]) {
+  async bulkDelete(ids: string[], userId: string) {
     return this.prisma.invoice.deleteMany({
       where: {
         id: { in: ids },
+        userId,
       },
     });
   }

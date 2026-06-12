@@ -14,12 +14,13 @@ export class InvoicesController {
   }
 
   @Post('bulk-delete')
-  bulkDelete(@Body('ids') ids: string[]) {
-    return this.invoicesService.bulkDelete(ids);
+  bulkDelete(@Body('ids') ids: string[], @Req() req: any) {
+    return this.invoicesService.bulkDelete(ids, req.user.id);
   }
 
   @Get()
   findAll(
+    @Req() req: any,
     @Query('search') search?: string,
     @Query('storeId') storeId?: string,
     @Query('categoryId') categoryId?: string,
@@ -27,7 +28,7 @@ export class InvoicesController {
     @Query('endDate') endDate?: string,
     @Query('paymentMode') paymentMode?: string,
   ) {
-    return this.invoicesService.findAll({ search, storeId, categoryId, startDate, endDate, paymentMode });
+    return this.invoicesService.findAll({ search, storeId, categoryId, startDate, endDate, paymentMode }, req.user.id);
   }
 
   @Post('ocr')
@@ -44,17 +45,17 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.invoicesService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.invoicesService.findOne(id, req.user.id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateInvoiceDto) {
-    return this.invoicesService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateInvoiceDto, @Req() req: any) {
+    return this.invoicesService.update(id, dto, req.user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.invoicesService.remove(id);
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.invoicesService.remove(id, req.user.id);
   }
 }
