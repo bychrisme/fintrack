@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
 import * as Icons from 'lucide-react';
 import { Plus, Edit, Trash, X, Search, Filter, Package, HelpCircle } from 'lucide-react';
@@ -371,7 +372,7 @@ export const Products: React.FC = () => {
       )}
 
       {/* Add / Edit Product Modal */}
-      {isModalOpen && (
+      {isModalOpen && createPortal(
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content animate-scale-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <div className="modal-header">
@@ -440,7 +441,8 @@ export const Products: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { Store, MapPin, ShoppingBag, Plus, Edit, Trash, X } from 'lucide-react';
@@ -220,7 +221,7 @@ export const Stores: React.FC = () => {
       )}
 
       {/* Add / Edit Store Modal */}
-      {isModalOpen && (
+      {isModalOpen && createPortal(
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content animate-scale-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
             <div className="modal-header">
@@ -345,7 +346,8 @@ export const Stores: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
