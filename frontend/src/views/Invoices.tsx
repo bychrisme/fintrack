@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
+import { Autocomplete } from '../components/Autocomplete';
 import { Search, Plus, FileSpreadsheet, Printer, Trash, Upload, Sparkles, ArrowLeft, Calendar, Store, CreditCard, MessageSquare, Tag, Edit, Loader2 } from 'lucide-react';
 
 export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = ({ initialView }) => {
@@ -50,6 +52,23 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
     { productName: '', categoryId: '', quantity: 1, unit: 'UNIT', unitPrice: 0, totalPrice: 0, taxRate: 0, discount: 0, brand: '', barcode: '' }
   ]);
 
+  // New Store Modal states
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreCity, setNewStoreCity] = useState('');
+  const [newStoreProvince, setNewStoreProvince] = useState('');
+  const [newStoreCountry, setNewStoreCountry] = useState('Canada');
+  const [newStoreType, setNewStoreType] = useState('SUPERMARKET');
+  const [newStoreAddress, setNewStoreAddress] = useState('');
+  const [newStorePhone, setNewStorePhone] = useState('');
+  const [newStoreWebsite, setNewStoreWebsite] = useState('');
+  const [storeFormLoading, setStoreFormLoading] = useState(false);
+
+  // Autocomplete lists for Store creation in Invoices
+  const [availableCountries, setAvailableCountries] = useState<any[]>([]);
+  const [availableProvinces, setAvailableProvinces] = useState<any[]>([]);
+  const [availableCities, setAvailableCities] = useState<any[]>([]);
+
   const fetchInvoices = async () => {
     try {
       const data = await api.invoices.findAll({
@@ -66,15 +85,105 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
     }
   };
 
-  const fetchMetadata = async () => {
+  const fetchMetadata = async (selectedId?: string) => {
     try {
       const storesData = await api.stores.findAll();
       const categoriesData = await api.categories.findAllFlat();
       setStores(storesData);
       setCategories(categoriesData);
-      if (storesData.length > 0) setFormStoreId(storesData[0].id);
+      if (selectedId) {
+        setFormStoreId(selectedId);
+      } else if (storesData.length > 0 && !formStoreId) {
+        setFormStoreId(storesData[0].id);
+      }
     } catch (err) {
       console.error('Failed to fetch metadata:', err);
+    }
+  };
+
+  const loadCountries = async () => {
+    try {
+      const list = await api.locations.getCountries();
+      setAvailableCountries(list);
+    } catch (err) {
+      console.error('Failed to load countries:', err);
+    }
+  };
+
+  const loadProvinces = async (countryName: string) => {
+    if (!countryName) {
+      setAvailableProvinces([]);
+      return;
+    }
+    try {
+      const list = await api.locations.getRegions(countryName);
+      setAvailableProvinces(list);
+    } catch (err) {
+      console.error('Failed to load provinces:', err);
+    }
+  };
+
+  const loadCities = async (countryName: string, provinceName: string) => {
+    if (!countryName || !provinceName) {
+      setAvailableCities([]);
+      return;
+    }
+    try {
+      const list = await api.locations.getCities(countryName, provinceName);
+      setAvailableCities(list);
+    } catch (err) {
+      console.error('Failed to load cities:', err);
+    }
+  };
+
+  const handleCountryChange = (val: string) => {
+    setNewStoreCountry(val);
+    setNewStoreProvince('');
+    setNewStoreCity('');
+    setAvailableCities([]);
+    loadProvinces(val);
+  };
+
+  const handleProvinceChange = (val: string) => {
+    setNewStoreProvince(val);
+    setNewStoreCity('');
+    loadCities(newStoreCountry, val);
+  };
+
+  const handleOpenStoreModal = () => {
+    setNewStoreName('');
+    setNewStoreCity('');
+    setNewStoreProvince('');
+    setNewStoreCountry('Canada');
+    setNewStoreType('SUPERMARKET');
+    setNewStoreAddress('');
+    setNewStorePhone('');
+    setNewStoreWebsite('');
+    setAvailableCities([]);
+    loadProvinces('Canada');
+    setIsStoreModalOpen(true);
+  };
+
+  const handleCreateStore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStoreFormLoading(true);
+    try {
+      const createdStore = await api.stores.create({
+        name: newStoreName,
+        city: newStoreCity,
+        province: newStoreProvince,
+        country: newStoreCountry,
+        type: newStoreType,
+        address: newStoreAddress || undefined,
+        phone: newStorePhone || undefined,
+        website: newStoreWebsite || undefined,
+      });
+      await fetchMetadata(createdStore.id);
+      setIsStoreModalOpen(false);
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la création du magasin');
+    } finally {
+      setStoreFormLoading(false);
     }
   };
 
@@ -89,7 +198,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchInvoices(), fetchMetadata(), fetchUniqueProducts()]).finally(() => setLoading(false));
+    Promise.all([fetchInvoices(), fetchMetadata(), fetchUniqueProducts(), loadCountries()]).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -292,18 +401,24 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       }
 
       // Reset form & transition back to list
-      setInvoiceNumber('');
-      setDate(new Date().toISOString().split('T')[0]);
-      setItems([{ productName: '', categoryId: '', quantity: 1, unit: 'UNIT', unitPrice: 0, taxRate: 0, discount: 0, brand: '', barcode: '' }]);
-      setComments('');
-      setRawStoreName('');
-      setGlobalDiscounts(0);
-      setEditingInvoice(null);
+      resetForm();
       setView('list');
       fetchUniqueProducts();
     } catch (err: any) {
       alert(err.message || 'Erreur lors de l\'enregistrement de la facture');
     }
+  };
+
+  const resetForm = () => {
+    setInvoiceNumber('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setFormPaymentMode(user?.defaultPaymentMode || 'DEBIT_CARD');
+    setFormStoreId(stores.length > 0 ? stores[0].id : '');
+    setComments('');
+    setRawStoreName('');
+    setGlobalDiscounts(0);
+    setItems([{ productName: '', categoryId: categories.length > 0 ? categories[0].id : '', quantity: 1, unit: 'UNIT', unitPrice: 0, taxRate: 0, discount: 0, brand: '', barcode: '' }]);
+    setEditingInvoice(null);
   };
 
   const handleDeleteInvoice = async (id: string) => {
@@ -318,13 +433,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
   };
 
   const openAddPage = () => {
-    if (categories.length > 0 && items[0].categoryId === '') {
-      const updated = [...items];
-      updated[0].categoryId = categories[0].id;
-      setItems(updated);
-    }
-    setFormPaymentMode(user?.defaultPaymentMode || 'DEBIT_CARD');
-    setGlobalDiscounts(0);
+    resetForm();
     setView('add');
   };
 
@@ -505,7 +614,6 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   <th>Numéro</th>
                   <th>Magasin</th>
                   <th>Mode</th>
-                  <th>Articles</th>
                   <th>Taxes</th>
                   <th>Total</th>
                   {user?.role === 'ADMIN' && <th style={{ textAlign: 'right' }}>Actions</th>}
@@ -533,15 +641,6 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                         backgroundColor: 'hsl(var(--secondary))',
                         color: 'hsl(var(--muted))'
                       }}>{inv.paymentMode}</span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        {inv.items.map((item: any, idx: number) => (
-                          <div key={idx} style={{ fontSize: '0.8rem', color: 'hsl(var(--foreground))' }}>
-                            • {item.productName} ({item.quantity} {item.unit.toLowerCase()}) - <span style={{ color: 'hsl(var(--muted))' }}>{item.netPrice} {user?.currency || '$'}</span>
-                          </div>
-                        ))}
-                      </div>
                     </td>
                     <td>{inv.totalTaxes.toFixed(2)} {user?.currency || '$'}</td>
                     <td style={{ fontWeight: 600 }}>{inv.totalAmount.toFixed(2)} {user?.currency || '$'}</td>
@@ -630,7 +729,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       <div className="animate-fade-in" style={{ maxWidth: '1300px', margin: '0 auto' }}>
         {/* Header toolbar */}
         <div className="flex-header" style={{ justifyContent: 'flex-start', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => { setView('list'); setEditingInvoice(null); }} className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem' }}>
+          <button onClick={() => { resetForm(); setView('list'); }} className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem' }}>
             <ArrowLeft size={16} />
           </button>
           <div>
@@ -668,13 +767,24 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   )}
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                     {ocrLoading ? 'Analyse du reçu par OCR...' : 'Remplissage magique par reçu photo (OCR)'}
+                    <span style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      backgroundColor: 'hsl(var(--warning) / 0.15)',
+                      color: 'hsl(var(--warning))',
+                      padding: '0.1rem 0.4rem',
+                      borderRadius: 'var(--radius-sm)',
+                      textTransform: 'uppercase',
+                      border: '1px solid hsl(var(--warning) / 0.3)',
+                      lineHeight: '1.2'
+                    }}>Beta</span>
                   </h3>
-                  <p style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))' }}>
+                  <p style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', marginTop: '0.25rem' }}>
                     {ocrLoading 
                       ? 'Extraction des articles, taxes, magasin et date du reçu en cours...' 
-                      : 'Téléversez une photo de votre reçu pour pré-remplir instantanément la facture.'}
+                      : 'Téléversez une photo de votre reçu pour pré-remplir instantanément la facture. Note : cette fonctionnalité est encore en version beta.'}
                   </p>
                 </div>
               </div>
@@ -745,9 +855,56 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Magasin *</label>
-                <select className="form-control" value={formStoreId} onChange={(e) => setFormStoreId(e.target.value)} required>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.1rem' }}>
+                  <label style={{ margin: 0 }}>Magasin *</label>
+                  <button
+                    type="button"
+                    onClick={handleOpenStoreModal}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'hsl(var(--primary))',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      padding: '0.1rem 0.3rem',
+                      borderRadius: 'var(--radius-sm)',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'hsl(var(--primary) / 0.1)';
+                      e.currentTarget.style.color = 'hsl(var(--accent))';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'hsl(var(--primary))';
+                    }}
+                  >
+                    <Plus size={12} />
+                    Nouveau ?
+                  </button>
+                </div>
+                <select 
+                  className="form-control" 
+                  value={formStoreId} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '__NEW_STORE__') {
+                      handleOpenStoreModal();
+                    } else {
+                      setFormStoreId(val);
+                    }
+                  }} 
+                  required 
+                >
                   {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  <option value="" disabled>-- Sélectionner --</option>
+                  <option value="__NEW_STORE__" style={{ color: 'hsl(var(--primary))', fontWeight: 600 }}>
+                    ➕ + Créer un nouveau magasin...
+                  </option>
                 </select>
               </div>
 
@@ -980,7 +1137,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
           {/* Actions footer */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-            <button type="button" onClick={() => { setView('list'); setEditingInvoice(null); }} className="btn btn-secondary">
+            <button type="button" onClick={() => { resetForm(); setView('list'); }} className="btn btn-secondary">
               Annuler
             </button>
             <button type="submit" className="btn btn-primary">
@@ -995,6 +1152,132 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
             <option key={pIdx} value={p.productName} />
           ))}
         </datalist>
+
+        {isStoreModalOpen && createPortal(
+          <div className="modal-overlay" onClick={() => setIsStoreModalOpen(false)}>
+            <div className="modal-content animate-scale-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
+              <div className="modal-header">
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                  Ajouter un nouveau magasin
+                </h2>
+                <button type="button" onClick={() => setIsStoreModalOpen(false)} className="btn btn-ghost" style={{ padding: '0.4rem', borderRadius: '50%', color: 'white' }}>
+                  <Plus size={20} style={{ transform: 'rotate(45deg)' }} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreateStore}>
+                <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Nom du magasin *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Ex: Walmart"
+                      value={newStoreName}
+                      onChange={(e) => setNewStoreName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Ville *</label>
+                      <Autocomplete
+                        value={newStoreCity}
+                        onChange={setNewStoreCity}
+                        suggestions={availableCities.map((c: any) => c.name)}
+                        placeholder="Ex: Montréal"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Province / État *</label>
+                      <Autocomplete
+                        value={newStoreProvince}
+                        onChange={handleProvinceChange}
+                        suggestions={availableProvinces.map((p: any) => p.name)}
+                        placeholder="Ex: Québec"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Pays *</label>
+                      <Autocomplete
+                        value={newStoreCountry}
+                        onChange={handleCountryChange}
+                        suggestions={availableCountries.map((c: any) => c.name)}
+                        placeholder="Ex: Canada"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Type de commerce</label>
+                      <select className="form-control" value={newStoreType} onChange={(e) => setNewStoreType(e.target.value)}>
+                        <option value="SUPERMARKET">Supermarché / Alimentation</option>
+                        <option value="PHARMACY">Pharmacie</option>
+                        <option value="GAS_STATION">Station-service / Essence</option>
+                        <option value="TRANSPORT">Transport</option>
+                        <option value="RETAIL">Vente au détail</option>
+                        <option value="RESTAU">Restaurant / Café</option>
+                        <option value="OTHER">Autre</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label>Adresse postale (facultatif)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Ex: 123 Rue de la Montagne"
+                      value={newStoreAddress}
+                      onChange={(e) => setNewStoreAddress(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Téléphone (facultatif)</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ex: 514-555-0199"
+                        value={newStorePhone}
+                        onChange={(e) => setNewStorePhone(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Site Web (facultatif)</label>
+                      <input
+                        type="url"
+                        className="form-control"
+                        placeholder="Ex: https://www.walmart.ca"
+                        value={newStoreWebsite}
+                        onChange={(e) => setNewStoreWebsite(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="modal-footer" style={{ padding: '1rem 1.5rem' }}>
+                  <button type="button" onClick={() => setIsStoreModalOpen(false)} className="btn btn-secondary">
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={storeFormLoading}>
+                    {storeFormLoading ? 'Enregistrement...' : 'Créer le magasin'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     );
   }

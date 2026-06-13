@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { PiggyBank, ShoppingBag, TrendingUp, Calendar, RefreshCw, Plus } from 'lucide-react';
+import { PiggyBank, ShoppingBag, RefreshCw, Plus } from 'lucide-react';
 
 export const Dashboard: React.FC<{ 
   navigateToInvoices: (subView: 'list' | 'add') => void;
@@ -96,39 +96,45 @@ export const Dashboard: React.FC<{
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="card-grid">
+      {/* Total Expenses Section */}
+      <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--muted))', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Aperçu des dépenses
+      </h3>
+      <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '1.5rem', gap: '1rem' }}>
         <div className="stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="stat-title">Ce Mois-ci</div>
-              <div className="stat-value">{kpis.totalSpentThisMonth.toFixed(2)} {user?.currency || '$'}</div>
-            </div>
-            <div style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-              <Calendar size={20} />
-            </div>
-          </div>
-          <div className="stat-footer">
-            {kpis.monthlyInvoiceCount} factures enregistrées
-          </div>
+          <div className="stat-title">Aujourd'hui</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem' }}>{(kpis.totalSpentToday || 0).toFixed(2)} {user?.currency || '$'}</div>
+          <div className="stat-footer">Dépenses du jour</div>
         </div>
 
         <div className="stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="stat-title">Cette Année</div>
-              <div className="stat-value">{kpis.totalSpentThisYear.toFixed(2)} {user?.currency || '$'}</div>
-            </div>
-            <div style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'hsl(var(--success) / 0.1)', color: 'hsl(var(--success))' }}>
-              <TrendingUp size={20} />
-            </div>
-          </div>
-          <div className="stat-footer">
-            Total annuel cumulé
-          </div>
+          <div className="stat-title">Cette Semaine</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem' }}>{(kpis.totalSpentThisWeek || 0).toFixed(2)} {user?.currency || '$'}</div>
+          <div className="stat-footer">Dépenses de la semaine</div>
         </div>
 
         <div className="stat-card">
+          <div className="stat-title">Ce Mois-ci</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem', color: 'hsl(var(--primary))' }}>{kpis.totalSpentThisMonth.toFixed(2)} {user?.currency || '$'}</div>
+          <div className="stat-footer">{kpis.monthlyInvoiceCount} factures mensuelles</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-title">Cette Année</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem' }}>{kpis.totalSpentThisYear.toFixed(2)} {user?.currency || '$'}</div>
+          <div className="stat-footer">Cumul annuel</div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-title">Total Cumulé</div>
+          <div className="stat-value" style={{ fontSize: '1.5rem', color: 'hsl(var(--success))' }}>{kpis.totalSpentAllTime.toFixed(2)} {user?.currency || '$'}</div>
+          <div className="stat-footer">Total historique</div>
+        </div>
+      </div>
+
+      {/* Stats and Highlights */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div className="stat-title">Articles Achetés</div>
@@ -138,16 +144,18 @@ export const Dashboard: React.FC<{
               <ShoppingBag size={20} />
             </div>
           </div>
-          <div className="stat-footer">
-            {kpis.invoiceCount} factures au total
+          <div className="stat-footer" style={{ marginTop: '0.5rem' }}>
+            {kpis.invoiceCount} factures au total dans FinTrack
           </div>
         </div>
 
-        {/* Indice d'économie Spotlight */}
         <div className="stat-card" style={{
           background: 'linear-gradient(135deg, hsl(208 95% 23% / 0.4), hsl(223 47% 14%))',
           borderColor: 'hsl(var(--primary) / 0.3)',
-          boxShadow: 'var(--shadow-glow)'
+          boxShadow: 'var(--shadow-glow)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
@@ -158,7 +166,7 @@ export const Dashboard: React.FC<{
               <PiggyBank size={20} />
             </div>
           </div>
-          <div className="stat-footer" style={{ color: 'hsl(var(--foreground) / 0.7)' }}>
+          <div className="stat-footer" style={{ color: 'hsl(var(--foreground) / 0.7)', marginTop: '0.5rem' }}>
             Économie potentielle cumulée cette année en achetant au prix minimum constaté !
           </div>
         </div>

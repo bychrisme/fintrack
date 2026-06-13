@@ -41,7 +41,10 @@ export class StoresService {
         invoices: {
           where: { userId },
           take: 5,
-          orderBy: { date: 'desc' },
+          orderBy: [
+            { date: 'desc' },
+            { createdAt: 'desc' }
+          ],
           select: { id: true, invoiceNumber: true, date: true, totalAmount: true },
         },
       },
@@ -129,6 +132,6 @@ export class StoresService {
         ticketMoyen,
         topProducts,
       };
-    }).sort((a, b) => b.totalSpent - a.totalSpent);
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }
 }

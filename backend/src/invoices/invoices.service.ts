@@ -166,7 +166,10 @@ export class InvoicesService {
           include: { category: true },
         },
       },
-      orderBy: { date: 'desc' },
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
   }
 

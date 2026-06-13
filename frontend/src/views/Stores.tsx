@@ -2,12 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { Store, MapPin, ShoppingBag, Plus, Edit, Trash, X } from 'lucide-react';
+import { Autocomplete } from '../components/Autocomplete';
+import { Store, MapPin, ShoppingBag, Plus, Edit, Trash, X, Search } from 'lucide-react';
 
 export const Stores: React.FC = () => {
   const { user } = useAuth();
   const [storeStats, setStoreStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Pagination states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
+
+  // Filter stores by name
+  const filteredStores = storeStats.filter(store => 
+    store.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredStores.length / pageSize);
+  const paginatedStores = filteredStores.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   // Modal & Form states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +46,61 @@ export const Stores: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [website, setWebsite] = useState('');
 
+  // Autocomplete lists
+  const [availableCountries, setAvailableCountries] = useState<any[]>([]);
+  const [availableProvinces, setAvailableProvinces] = useState<any[]>([]);
+  const [availableCities, setAvailableCities] = useState<any[]>([]);
+
+  // Location helpers
+  const loadCountries = async () => {
+    try {
+      const list = await api.locations.getCountries();
+      setAvailableCountries(list);
+    } catch (err) {
+      console.error('Failed to load countries:', err);
+    }
+  };
+
+  const loadProvinces = async (countryName: string) => {
+    if (!countryName) {
+      setAvailableProvinces([]);
+      return;
+    }
+    try {
+      const list = await api.locations.getRegions(countryName);
+      setAvailableProvinces(list);
+    } catch (err) {
+      console.error('Failed to load provinces:', err);
+    }
+  };
+
+  const loadCities = async (countryName: string, provinceName: string) => {
+    if (!countryName || !provinceName) {
+      setAvailableCities([]);
+      return;
+    }
+    try {
+      const list = await api.locations.getCities(countryName, provinceName);
+      setAvailableCities(list);
+    } catch (err) {
+      console.error('Failed to load cities:', err);
+    }
+  };
+
+  const handleCountryChange = (val: string) => {
+    setCountry(val);
+    setProvince('');
+    setCity('');
+    setAvailableCities([]);
+    loadProvinces(val);
+  };
+
+  const handleProvinceChange = (val: string) => {
+    setProvince(val);
+    setCity('');
+    loadCities(country, val);
+  };
+
   const fetchStoreStats = async () => {
     try {
       const data = await api.stores.getStats();
@@ -36,6 +114,7 @@ export const Stores: React.FC = () => {
 
   useEffect(() => {
     fetchStoreStats();
+    loadCountries();
   }, []);
 
   const openAddModal = () => {
@@ -49,6 +128,9 @@ export const Stores: React.FC = () => {
     setPhone('');
     setWebsite('');
     setIsModalOpen(true);
+    // Load provinces for the default country ('Canada')
+    loadProvinces('Canada');
+    setAvailableCities([]);
   };
 
   const openEditModal = async (storeSummary: any) => {
@@ -65,6 +147,14 @@ export const Stores: React.FC = () => {
       setPhone(fullStore.phone || '');
       setWebsite(fullStore.website || '');
       setIsModalOpen(true);
+
+      // Load cascade lists for the edit values
+      if (fullStore.country) {
+        loadProvinces(fullStore.country);
+        if (fullStore.province) {
+          loadCities(fullStore.country, fullStore.province);
+        }
+      }
     } catch (err) {
       alert('Erreur lors du chargement des détails du magasin');
     } finally {
@@ -132,92 +222,201 @@ export const Stores: React.FC = () => {
         </button>
       </div>
 
+      {/* Search Filter Bar */}
+      <div style={{
+        position: 'relative',
+        marginBottom: '1.5rem',
+        maxWidth: '400px',
+        width: '100%'
+      }}>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Rechercher un magasin par son nom..."
+          value={searchQuery}
+          onChange={handleSearchChange}
+          style={{
+            paddingLeft: '2.5rem',
+            width: '100%',
+            height: '42px',
+            fontSize: '0.9rem',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--card-border))',
+            color: 'white'
+          }}
+        />
+        <Search
+          size={18}
+          style={{
+            position: 'absolute',
+            left: '0.9rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'hsl(var(--muted))'
+          }}
+        />
+        {searchQuery && (
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setCurrentPage(1);
+            }}
+            className="btn btn-ghost"
+            style={{
+              position: 'absolute',
+              right: '0.5rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              padding: '0.25rem',
+              color: 'hsl(var(--muted))',
+              height: 'auto',
+              borderRadius: '50%'
+            }}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
       {storeStats.length === 0 ? (
         <div style={{ padding: '4rem', textAlign: 'center', backgroundColor: 'hsl(var(--card))', borderRadius: 'var(--radius-lg)', border: '1px solid hsl(var(--card-border))', color: 'hsl(var(--muted))' }}>
           Aucun magasin enregistré.
         </div>
+      ) : filteredStores.length === 0 ? (
+        <div style={{ padding: '4rem', textAlign: 'center', backgroundColor: 'hsl(var(--card))', borderRadius: 'var(--radius-lg)', border: '1px solid hsl(var(--card-border))', color: 'hsl(var(--muted))' }}>
+          Aucun magasin ne correspond à "{searchQuery}".
+        </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {storeStats.map((store) => (
-            <div key={store.id} className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', height: '100%' }}>
-              
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{
-                    padding: '0.75rem',
-                    borderRadius: 'var(--radius-md)',
-                    backgroundColor: 'hsl(var(--primary) / 0.1)',
-                    color: 'hsl(var(--primary))'
-                  }}>
-                    <Store size={22} />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{store.name}</h2>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'hsl(var(--muted))' }}>
-                      <MapPin size={12} />
-                      <span>{store.city}, {store.type}</span>
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            {paginatedStores.map((store) => (
+              <div key={store.id} className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', height: '100%' }}>
+                
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      padding: '0.75rem',
+                      borderRadius: 'var(--radius-md)',
+                      backgroundColor: 'hsl(var(--primary) / 0.1)',
+                      color: 'hsl(var(--primary))'
+                    }}>
+                      <Store size={22} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{store.name}</h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'hsl(var(--muted))' }}>
+                        <MapPin size={12} />
+                        <span>{store.city}, {store.type}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button onClick={() => openEditModal(store)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--muted))' }} title="Modifier">
-                    <Edit size={15} />
-                  </button>
-                  <button onClick={() => handleDeleteStore(store.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--destructive))' }} title="Supprimer">
-                    <Trash size={15} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Financial indicators */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', backgroundColor: 'hsl(var(--muted-dark))', borderRadius: 'var(--radius-md)' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>Dépenses Totales</span>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>{store.totalSpent.toFixed(2)} {user?.currency || '$'}</span>
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>Ticket Moyen</span>
-                  <span style={{ fontSize: '1.15rem', fontWeight: 700 }}>{store.ticketMoyen.toFixed(2)} {user?.currency || '$'}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.5rem' }}>
-                <span>Nombre de factures :</span>
-                <span style={{ fontWeight: 600, color: 'hsl(var(--foreground))' }}>{store.invoiceCount}</span>
-              </div>
-
-              {/* Top products */}
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                  <ShoppingBag size={14} />
-                  Produits les plus achetés
-                </h3>
-                
-                {store.topProducts.length === 0 ? (
-                  <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))', fontStyle: 'italic' }}>Aucun article enregistré.</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    {store.topProducts.map((p: any, idx: number) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
-                        <span style={{ color: 'hsl(var(--foreground) / 0.95)' }}>{p.name}</span>
-                        <span style={{
-                          padding: '0.1rem 0.4rem',
-                          borderRadius: 'var(--radius-sm)',
-                          backgroundColor: 'hsl(var(--secondary))',
-                          color: 'hsl(var(--muted))',
-                          fontSize: '0.75rem'
-                        }}>qté: {p.quantity}</span>
-                      </div>
-                    ))}
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <button onClick={() => openEditModal(store)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--muted))' }} title="Modifier">
+                      <Edit size={15} />
+                    </button>
+                    <button onClick={() => handleDeleteStore(store.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--destructive))' }} title="Supprimer">
+                      <Trash size={15} />
+                    </button>
                   </div>
-                )}
+                </div>
+
+                {/* Financial indicators */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', backgroundColor: 'hsl(var(--muted-dark))', borderRadius: 'var(--radius-md)' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>Dépenses Totales</span>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>{store.totalSpent.toFixed(2)} {user?.currency || '$'}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>Ticket Moyen</span>
+                    <span style={{ fontSize: '1.15rem', fontWeight: 700 }}>{store.ticketMoyen.toFixed(2)} {user?.currency || '$'}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.5rem' }}>
+                  <span>Nombre de factures :</span>
+                  <span style={{ fontWeight: 600, color: 'hsl(var(--foreground))' }}>{store.invoiceCount}</span>
+                </div>
+
+                {/* Top products */}
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                    <ShoppingBag size={14} />
+                    Produits les plus achetés
+                  </h3>
+                  
+                  {store.topProducts.length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))', fontStyle: 'italic' }}>Aucun article enregistré.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {store.topProducts.map((p: any, idx: number) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+                          <span style={{ color: 'hsl(var(--foreground) / 0.95)' }}>{p.name}</span>
+                          <span style={{
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: 'var(--radius-sm)',
+                            backgroundColor: 'hsl(var(--secondary))',
+                            color: 'hsl(var(--muted))',
+                            fontSize: '0.75rem'
+                          }}>qté: {p.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
+                <span>Afficher</span>
+                <select 
+                  value={pageSize} 
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="form-control"
+                  style={{ width: '75px', padding: '0.25rem 0.5rem', height: 'auto', backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--card-border))', color: 'white' }}
+                >
+                  <option value={6}>6</option>
+                  <option value={12}>12</option>
+                  <option value={24}>24</option>
+                  <option value={48}>48</option>
+                </select>
+                <span>magasins par page</span>
               </div>
 
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <button 
+                  className="btn btn-ghost" 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                >
+                  Précédent
+                </button>
+                <span style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
+                  Page {currentPage} sur {totalPages || 1}
+                </span>
+                <button 
+                  className="btn btn-ghost" 
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                >
+                  Suivant
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {/* Add / Edit Store Modal */}
@@ -250,24 +449,22 @@ export const Stores: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Ville *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Ex: Montréal"
+                    <Autocomplete
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      onChange={setCity}
+                      suggestions={availableCities.map((c: any) => c.name)}
+                      placeholder="Ex: Montréal"
                       required
                     />
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Province / État *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Ex: Québec"
+                    <Autocomplete
                       value={province}
-                      onChange={(e) => setProvince(e.target.value)}
+                      onChange={handleProvinceChange}
+                      suggestions={availableProvinces.map((p: any) => p.name)}
+                      placeholder="Ex: Québec"
                       required
                     />
                   </div>
@@ -276,12 +473,11 @@ export const Stores: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Pays *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Ex: Canada"
+                    <Autocomplete
                       value={country}
-                      onChange={(e) => setCountry(e.target.value)}
+                      onChange={handleCountryChange}
+                      suggestions={availableCountries.map((c: any) => c.name)}
+                      placeholder="Ex: Canada"
                       required
                     />
                   </div>

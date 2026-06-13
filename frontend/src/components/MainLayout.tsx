@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
-import { LayoutDashboard, Receipt, Store, Search, LineChart, DollarSign, LogOut, Sun, Moon, Settings as SettingsIcon, Menu, X, Package } from 'lucide-react';
+import { LayoutDashboard, Receipt, Store, Search, LineChart, DollarSign, LogOut, Sun, Moon, Settings as SettingsIcon, Menu, X, Package, BarChart3 } from 'lucide-react';
 import { Dashboard } from '../views/Dashboard';
 import { Invoices } from '../views/Invoices';
 import { Stores } from '../views/Stores';
@@ -9,6 +9,7 @@ import { Consumption } from '../views/Consumption';
 import { Budgets } from '../views/Budgets';
 import { Settings } from '../views/Settings';
 import { Products } from '../views/Products';
+import { Kpis } from '../views/Kpis';
 
 export const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -33,6 +34,7 @@ export const MainLayout: React.FC = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: <LayoutDashboard size={20} /> },
+    { id: 'kpis', label: 'KPIs & Analyses', icon: <BarChart3 size={20} /> },
     { id: 'invoices', label: 'Factures & OCR', icon: <Receipt size={20} /> },
     { id: 'stores', label: 'Magasins', icon: <Store size={20} /> },
     { id: 'articles', label: 'Articles', icon: <Package size={20} /> },
@@ -46,6 +48,8 @@ export const MainLayout: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard navigateToInvoices={navigateToInvoices} />;
+      case 'kpis':
+        return <Kpis />;
       case 'invoices':
         return <Invoices initialView={invoicesInitialView} />;
       case 'stores':

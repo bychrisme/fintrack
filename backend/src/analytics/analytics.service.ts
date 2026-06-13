@@ -7,8 +7,14 @@ export class AnalyticsService {
 
   async getDashboardStats(userId: string) {
     const currentDate = new Date();
-    const thisMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const thisYearStart = new Date(currentDate.getFullYear(), 0, 1);
+    const thisMonthStart = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), 1));
+    const thisYearStart = new Date(Date.UTC(currentDate.getUTCFullYear(), 0, 1));
+    const startOfToday = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate()));
+    
+    // Start of week (Monday)
+    const day = currentDate.getUTCDay();
+    const diff = currentDate.getUTCDate() - day + (day === 0 ? -6 : 1);
+    const startOfWeek = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), diff));
 
     // 1. Fetch all user invoices
     const allInvoices = await this.prisma.invoice.findMany({
@@ -19,11 +25,21 @@ export class AnalyticsService {
           include: { category: true },
         },
       },
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
 
     // 2. Calculate totals
     const totalSpentAllTime = allInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
     const totalInvoicesCount = allInvoices.length;
+
+    const todayInvoices = allInvoices.filter(inv => inv.date >= startOfToday);
+    const totalSpentToday = todayInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+
+    const weeklyInvoices = allInvoices.filter(inv => inv.date >= startOfWeek);
+    const totalSpentThisWeek = weeklyInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
 
     const monthlyInvoices = allInvoices.filter(inv => inv.date >= thisMonthStart);
     const totalSpentThisMonth = monthlyInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
@@ -112,6 +128,8 @@ export class AnalyticsService {
 
     return {
       kpis: {
+        totalSpentToday: parseFloat(totalSpentToday.toFixed(2)),
+        totalSpentThisWeek: parseFloat(totalSpentThisWeek.toFixed(2)),
         totalSpentThisMonth: parseFloat(totalSpentThisMonth.toFixed(2)),
         totalSpentThisYear: parseFloat(totalSpentThisYear.toFixed(2)),
         totalSpentAllTime: parseFloat(totalSpentAllTime.toFixed(2)),
@@ -289,8 +307,8 @@ export class AnalyticsService {
       include: { category: true },
     });
 
-    const startDate = new Date(thisYear, thisMonth - 1, 1);
-    const endDate = new Date(thisYear, thisMonth, 0, 23, 59, 59);
+    const startDate = new Date(Date.UTC(thisYear, thisMonth - 1, 1));
+    const endDate = new Date(Date.UTC(thisYear, thisMonth, 0, 23, 59, 59, 999));
 
     for (const b of budgets) {
       let spent = 0;
@@ -421,5 +439,365 @@ export class AnalyticsService {
     });
 
     return alerts;
+  }
+
+  async getKpiDetails(userId: string) {
+    const currentDate = new Date();
+    const thisMonthStart = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), 1));
+    const thisYearStart = new Date(Date.UTC(currentDate.getUTCFullYear(), 0, 1));
+    
+    // Previous Month start/end
+    const lastMonthStart = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1, 1));
+    const lastMonthEnd = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), 0, 23, 59, 59, 999));
+
+    // Fetch all user invoices
+    const allInvoices = await this.prisma.invoice.findMany({
+      where: { userId },
+      include: {
+        store: true,
+        items: {
+          include: { category: true },
+        },
+      },
+      orderBy: [
+        { date: 'desc' },
+        { createdAt: 'desc' }
+      ],
+    });
+
+    const totalSpentAllTime = allInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+    const totalInvoicesCount = allInvoices.length;
+
+    // 1. Dépenses totals
+    const monthlyInvoices = allInvoices.filter(inv => inv.date >= thisMonthStart);
+    const totalSpentThisMonth = monthlyInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+
+    const lastMonthInvoices = allInvoices.filter(inv => inv.date >= lastMonthStart && inv.date <= lastMonthEnd);
+    const totalSpentLastMonth = lastMonthInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+
+    // 2. Évolution des dépenses
+    const monthlyVariation = totalSpentLastMonth > 0 
+      ? parseFloat((((totalSpentThisMonth - totalSpentLastMonth) / totalSpentLastMonth) * 100).toFixed(1))
+      : 0;
+
+    // Tendance sur 3 mois
+    const last3Months: any[] = [];
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - i, 1));
+      const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      const mStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+      const mEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+      const mInvoices = allInvoices.filter(inv => inv.date >= mStart && inv.date <= mEnd);
+      const amount = mInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+      const invoiceCount = mInvoices.length;
+      last3Months.push({ label, amount: parseFloat(amount.toFixed(2)), invoiceCount });
+    }
+    last3Months.reverse();
+
+    // Tendance sur 12 mois
+    const last12Months: any[] = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - i, 1));
+      const label = d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+      const mStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+      const mEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+      const mInvoices = allInvoices.filter(inv => inv.date >= mStart && inv.date <= mEnd);
+      const amount = mInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+      const invoiceCount = mInvoices.length;
+      last12Months.push({ label, amount: parseFloat(amount.toFixed(2)), invoiceCount });
+    }
+    last12Months.reverse();
+
+    // Mois le plus dépensier
+    const monthlyTotals: Record<string, number> = {};
+    allInvoices.forEach(inv => {
+      const key = inv.date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      monthlyTotals[key] = (monthlyTotals[key] || 0) + inv.totalAmount;
+    });
+    let maxMonth = 'N/A';
+    let maxMonthAmount = 0;
+    Object.entries(monthlyTotals).forEach(([month, amount]) => {
+      if (amount > maxMonthAmount) {
+        maxMonthAmount = amount;
+        maxMonth = month;
+      }
+    });
+
+    const evolutionStats = {
+      thisMonthSpent: parseFloat(totalSpentThisMonth.toFixed(2)),
+      lastMonthSpent: parseFloat(totalSpentLastMonth.toFixed(2)),
+      variation: monthlyVariation,
+      trend3Months: last3Months,
+      trend12Months: last12Months,
+      mostExpensiveMonth: {
+        month: maxMonth,
+        amount: parseFloat(maxMonthAmount.toFixed(2)),
+      },
+    };
+
+    // 3. Dépenses par catégorie
+    const categoryTotals: Record<string, { name: string; amount: number }> = {};
+    allInvoices.forEach(inv => {
+      inv.items.forEach(item => {
+        const catName = item.category.name;
+        if (!categoryTotals[catName]) {
+          categoryTotals[catName] = { name: catName, amount: 0 };
+        }
+        categoryTotals[catName].amount += item.netPrice;
+      });
+    });
+    const totalCategoriesSpent = Object.values(categoryTotals).reduce((sum, c) => sum + c.amount, 0);
+    const categoryBreakdown = Object.values(categoryTotals).map(c => ({
+      categoryName: c.name,
+      amount: parseFloat(c.amount.toFixed(2)),
+      percentage: totalCategoriesSpent > 0 ? parseFloat(((c.amount / totalCategoriesSpent) * 100).toFixed(1)) : 0
+    })).sort((a, b) => b.amount - a.amount);
+    
+    const mostExpensiveCategory = categoryBreakdown[0]?.categoryName || 'N/A';
+
+    const categoryStats = {
+      breakdown: categoryBreakdown,
+      mostExpensive: mostExpensiveCategory,
+      totalSpent: parseFloat(totalCategoriesSpent.toFixed(2)),
+    };
+
+    // 4. Analyse des magasins
+    const storeStats: Record<string, { name: string; totalSpent: number; visitCount: number }> = {};
+    allInvoices.forEach(inv => {
+      const storeName = inv.store.name;
+      if (!storeStats[storeName]) {
+        storeStats[storeName] = { name: storeName, totalSpent: 0, visitCount: 0 };
+      }
+      storeStats[storeName].totalSpent += inv.totalAmount;
+      storeStats[storeName].visitCount += 1;
+    });
+
+    const storeStatsList = Object.values(storeStats).map(s => ({
+      storeName: s.name,
+      totalSpent: parseFloat(s.totalSpent.toFixed(2)),
+      visitCount: s.visitCount,
+      averageTicket: parseFloat((s.totalSpent / s.visitCount).toFixed(2))
+    })).sort((a, b) => b.totalSpent - a.totalSpent);
+
+    let mostVisitedStore = 'N/A';
+    let maxVisits = 0;
+    let mostExpensiveStore = 'N/A';
+    let maxAvgTicket = 0;
+    let cheapestStoreByAvg = 'N/A';
+    let minAvgTicket = Infinity;
+
+    storeStatsList.forEach(s => {
+      if (s.visitCount > maxVisits) {
+        maxVisits = s.visitCount;
+        mostVisitedStore = s.storeName;
+      }
+      if (s.averageTicket > maxAvgTicket) {
+        maxAvgTicket = s.averageTicket;
+        mostExpensiveStore = s.storeName;
+      }
+      if (s.averageTicket < minAvgTicket) {
+        minAvgTicket = s.averageTicket;
+        cheapestStoreByAvg = s.storeName;
+      }
+    });
+    if (minAvgTicket === Infinity) cheapestStoreByAvg = 'N/A';
+
+    const storeAnalysis = {
+      stores: storeStatsList,
+      mostVisited: mostVisitedStore,
+      mostExpensive: mostExpensiveStore,
+      cheapest: cheapestStoreByAvg,
+    };
+
+    // 5. Analyse des factures
+    let largestInvoiceAmount = 0;
+    let smallestInvoiceAmount = totalInvoicesCount > 0 ? Infinity : 0;
+    allInvoices.forEach(inv => {
+      if (inv.totalAmount > largestInvoiceAmount) largestInvoiceAmount = inv.totalAmount;
+      if (inv.totalAmount < smallestInvoiceAmount) smallestInvoiceAmount = inv.totalAmount;
+    });
+    if (smallestInvoiceAmount === Infinity) smallestInvoiceAmount = 0;
+
+    const invoiceAnalysis = {
+      totalCount: totalInvoicesCount,
+      averageAmount: totalInvoicesCount > 0 ? parseFloat((totalSpentAllTime / totalInvoicesCount).toFixed(2)) : 0,
+      largest: parseFloat(largestInvoiceAmount.toFixed(2)),
+      smallest: parseFloat(smallestInvoiceAmount.toFixed(2)),
+      monthlyCountTrend: last12Months.map(m => ({ label: m.label, count: m.invoiceCount })),
+    };
+
+    // 6. Analyse des produits & 7. Évolution des prix (Inflation)
+    const productStatsMap: Record<string, { name: string; totalQty: number; totalPrice: number; prices: number[] }> = {};
+    allInvoices.forEach(inv => {
+      inv.items.forEach(item => {
+        const cleanName = item.productName.trim();
+        const price = item.unitPrice;
+        const qty = item.quantity;
+        if (!productStatsMap[cleanName]) {
+          productStatsMap[cleanName] = {
+            name: cleanName,
+            totalQty: 0,
+            totalPrice: 0,
+            prices: []
+          };
+        }
+        productStatsMap[cleanName].totalQty += qty;
+        productStatsMap[cleanName].totalPrice += price * qty;
+        productStatsMap[cleanName].prices.push(price);
+      });
+    });
+
+    // We also need chronological prices to find first and latest
+    const allItemsForEvol = await this.prisma.invoiceItem.findMany({
+      where: { invoice: { userId } },
+      include: { invoice: true },
+      orderBy: { invoice: { date: 'asc' } }
+    });
+
+    const productPriceChronology: Record<string, { price: number; date: Date }[]> = {};
+    allItemsForEvol.forEach(item => {
+      const name = item.productName.trim();
+      if (!productPriceChronology[name]) productPriceChronology[name] = [];
+      productPriceChronology[name].push({ price: item.unitPrice, date: item.invoice.date });
+    });
+
+    const priceEvolutionsList = Object.entries(productPriceChronology)
+      .map(([name, history]) => {
+        if (history.length < 2) return null;
+        const first = history[0].price;
+        const last = history[history.length - 1].price;
+        const change = last - first;
+        const percentageChange = first > 0 ? parseFloat(((change / first) * 100).toFixed(1)) : 0;
+        return {
+          productName: name,
+          firstPrice: first,
+          latestPrice: last,
+          change,
+          percentageChange
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+
+    const priceIncreases = [...priceEvolutionsList]
+      .filter(x => x.percentageChange > 0)
+      .sort((a, b) => b.percentageChange - a.percentageChange)
+      .slice(0, 5);
+
+    const priceDecreases = [...priceEvolutionsList]
+      .filter(x => x.percentageChange < 0)
+      .sort((a, b) => a.percentageChange - b.percentageChange)
+      .slice(0, 5);
+
+    const totalInflationSum = priceEvolutionsList.reduce((sum, x) => sum + x.percentageChange, 0);
+    const basketInflation = priceEvolutionsList.length > 0 ? parseFloat((totalInflationSum / priceEvolutionsList.length).toFixed(2)) : 0;
+
+    const productsStatsList = Object.values(productStatsMap).map(p => {
+      const minPrice = Math.min(...p.prices);
+      const maxPrice = Math.max(...p.prices);
+      const avgPrice = parseFloat((p.totalPrice / p.totalQty).toFixed(2));
+      const chronology = productPriceChronology[p.name] || [];
+      const latestPrice = chronology.length > 0 ? chronology[chronology.length - 1].price : 0;
+      return {
+        productName: p.name,
+        totalQty: parseFloat(p.totalQty.toFixed(2)),
+        avgPrice,
+        latestPrice,
+        minPrice,
+        maxPrice
+      };
+    }).sort((a, b) => b.totalQty - a.totalQty);
+
+    const productAnalysis = {
+      topProducts: productsStatsList.slice(0, 10),
+      priceEvolution: {
+        increases: priceIncreases,
+        decreases: priceDecreases,
+        basketInflation,
+      },
+    };
+
+    // 8. TVA et taxes
+    const totalTaxesPaid = allInvoices.reduce((sum, inv) => sum + inv.totalTaxes, 0);
+    
+    const taxesByCategoryMap: Record<string, number> = {};
+    const taxesByStoreMap: Record<string, number> = {};
+    
+    allInvoices.forEach(inv => {
+      const storeName = inv.store.name;
+      taxesByStoreMap[storeName] = (taxesByStoreMap[storeName] || 0) + inv.totalTaxes;
+      
+      inv.items.forEach(item => {
+        const catName = item.category.name;
+        const taxAmount = item.discount > 0 
+          ? (item.unitPrice * item.quantity - item.discount) * (item.taxRate / 100)
+          : (item.unitPrice * item.quantity) * (item.taxRate / 100);
+        taxesByCategoryMap[catName] = (taxesByCategoryMap[catName] || 0) + taxAmount;
+      });
+    });
+
+    const taxesByCategory = Object.entries(taxesByCategoryMap).map(([category, amount]) => ({
+      category,
+      amount: parseFloat(amount.toFixed(2))
+    })).sort((a, b) => b.amount - a.amount);
+
+    const taxesByStore = Object.entries(taxesByStoreMap).map(([storeName, amount]) => ({
+      storeName,
+      amount: parseFloat(amount.toFixed(2))
+    })).sort((a, b) => b.amount - a.amount);
+
+    const taxAnalysis = {
+      totalTaxesPaid: parseFloat(totalTaxesPaid.toFixed(2)),
+      taxPercentage: totalSpentAllTime > 0 ? parseFloat(((totalTaxesPaid / totalSpentAllTime) * 100).toFixed(2)) : 0,
+      byCategory: taxesByCategory,
+      byStore: taxesByStore,
+    };
+
+    return {
+      evolutionStats,
+      categoryStats,
+      storeAnalysis,
+      invoiceAnalysis,
+      productAnalysis,
+      taxAnalysis,
+    };
+  }
+
+  async getProductHistory(userId: string, productName: string) {
+    if (!productName) {
+      return [];
+    }
+
+    const cleanName = productName.toLowerCase().trim();
+
+    // Fetch the last 20 records of this product
+    const items = await this.prisma.invoiceItem.findMany({
+      where: {
+        productName: {
+          contains: cleanName,
+          mode: 'insensitive',
+        },
+        invoice: { userId },
+      },
+      include: {
+        invoice: {
+          include: { store: true },
+        },
+      },
+      orderBy: { invoice: { date: 'desc' } },
+      take: 20,
+    });
+
+    // Reorder them chronologically (oldest to newest) for the chart
+    items.reverse();
+
+    return items.map(item => ({
+      id: item.id,
+      date: item.invoice.date,
+      storeName: item.invoice.store.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      netPrice: item.netPrice,
+      unit: item.unit,
+    }));
   }
 }

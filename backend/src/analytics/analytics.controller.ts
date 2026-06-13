@@ -12,6 +12,11 @@ export class AnalyticsController {
     return this.analyticsService.getDashboardStats(req.user.id);
   }
 
+  @Get('kpi-details')
+  getKpiDetails(@Req() req: any) {
+    return this.analyticsService.getKpiDetails(req.user.id);
+  }
+
   @Get('prices')
   comparePrices(@Query('productName') productName: string, @Req() req: any) {
     return this.analyticsService.comparePrices(req.user.id, productName || 'Lait 2L');
@@ -25,5 +30,10 @@ export class AnalyticsController {
   @Get('alerts')
   getAlerts(@Req() req: any) {
     return this.analyticsService.getAlerts(req.user.id);
+  }
+
+  @Get('product-history')
+  getProductHistory(@Query('productName') productName: string, @Req() req: any) {
+    return this.analyticsService.getProductHistory(req.user.id, productName);
   }
 }

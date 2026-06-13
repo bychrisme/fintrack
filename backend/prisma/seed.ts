@@ -97,358 +97,306 @@ async function main() {
   const storesMap: Record<string, string> = {};
   
   // Seed stores for admin
+  // Seed stores for admin
   for (const store of baseStores) {
     await prisma.store.create({
       data: { ...store, userId: admin.id }
     });
   }
 
-  // Seed stores for dad & mom as needed for invoices
-  const dadStores = ['Walmart', 'Costco', 'Canadian Tire', 'Shell'];
-  const momStores = ['No Frills', 'Pharmaprix'];
+  // Seed stores for dad & mom (give both all stores to prevent any comparative gaps)
+  const dadStoresMap: Record<string, string> = {};
+  const momStoresMap: Record<string, string> = {};
 
   for (const store of baseStores) {
-    if (dadStores.includes(store.name)) {
-      const created = await prisma.store.create({
-        data: { ...store, userId: dad.id }
-      });
-      storesMap[store.name] = created.id;
-    } else if (momStores.includes(store.name)) {
-      const created = await prisma.store.create({
-        data: { ...store, userId: mom.id }
-      });
-      storesMap[store.name] = created.id;
-    }
+    const dadStore = await prisma.store.create({
+      data: { ...store, userId: dad.id }
+    });
+    dadStoresMap[store.name] = dadStore.id;
+
+    const momStore = await prisma.store.create({
+      data: { ...store, userId: mom.id }
+    });
+    momStoresMap[store.name] = momStore.id;
   }
 
   console.log('Stores created.');
 
   // 5. Invoices & Invoice Items (Simulating historical purchases over 12 months)
-  // Let's create transactions for the past 6 months to demonstrate inflation, price variation, and user consumption.
   const months = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]; // 11 months ago to this month
   const currentDate = new Date();
 
-  // We will populate data specifically for "Lait 2L" (Milk) and "Riz 5kg" (Rice) to show price comparison.
-  // Milk prices: No Frills ($5.10) > Walmart ($4.99) > Costco ($4.69)
-  // Milk inflation: Rose from $4.10 (Costco) to $4.69 in 12 months
-  // Rice prices: No Frills ($14.25) > Walmart ($13.50) > Costco ($11.99)
+  interface SeedProduct {
+    name: string;
+    category: string;
+    basePrice: number;
+    unit: string;
+    brandOptions: string[];
+    isTaxed: boolean;
+  }
+
+  const seedProducts: SeedProduct[] = [
+    // Alimentation
+    { name: 'Lait 2L', category: 'Alimentation', basePrice: 4.80, unit: 'LITRE', brandOptions: ['Québon', 'Beatrice', 'Lactantia'], isTaxed: false },
+    { name: 'Riz 5kg', category: 'Alimentation', basePrice: 13.50, unit: 'KG', brandOptions: ['Uncle Ben\'s', 'Dano', 'Selection'], isTaxed: false },
+    { name: 'Œufs 12', category: 'Alimentation', basePrice: 3.99, unit: 'UNIT', brandOptions: ['Gray Ridge', 'Selection', 'Burnbrae'], isTaxed: false },
+    { name: 'Pain de Blé 675g', category: 'Alimentation', basePrice: 3.20, unit: 'UNIT', brandOptions: ['Dempster\'s', 'Wonder', 'Bon Matin'], isTaxed: false },
+    { name: 'Beurre 454g', category: 'Alimentation', basePrice: 6.50, unit: 'UNIT', brandOptions: ['Lactantia', 'Gay Lea', 'Selection'], isTaxed: false },
+    { name: 'Poitrines de Poulet 1kg', category: 'Alimentation', basePrice: 14.99, unit: 'KG', brandOptions: ['Maple Leaf', 'Exceldor'], isTaxed: false },
+    { name: 'Pommes Gala 3lb', category: 'Alimentation', basePrice: 4.99, unit: 'UNIT', brandOptions: ['Del Monte', 'Selection'], isTaxed: false },
+    { name: 'Bananes 1kg', category: 'Alimentation', basePrice: 1.69, unit: 'KG', brandOptions: ['Chiquita', 'Dole'], isTaxed: false },
+    { name: 'Café en Grains 1kg', category: 'Alimentation', basePrice: 16.99, unit: 'PACK', brandOptions: ['Starbucks', 'Nabob', 'Van Houtte'], isTaxed: false },
+
+    // Produits ménagers
+    { name: 'Savon à vaisselle 800ml', category: 'Produits ménagers', basePrice: 3.49, unit: 'UNIT', brandOptions: ['Palmolive', 'Dawn'], isTaxed: true },
+    { name: 'Détergent à lessive 4.43L', category: 'Produits ménagers', basePrice: 14.99, unit: 'UNIT', brandOptions: ['Tide', 'Sunlight', 'Gain'], isTaxed: true },
+    { name: 'Papier hygiénique 30 rlx', category: 'Produits ménagers', basePrice: 17.99, unit: 'PACK', brandOptions: ['Royale', 'Cashmere', 'Charmin'], isTaxed: true },
+    { name: 'Nettoyant tout usage 1L', category: 'Produits ménagers', basePrice: 4.29, unit: 'UNIT', brandOptions: ['Lysol', 'Mr. Clean', 'Hertel'], isTaxed: true },
+
+    // Santé
+    { name: 'Tylenol Extra-Fort', category: 'Santé', basePrice: 11.49, unit: 'BOX', brandOptions: ['Tylenol'], isTaxed: true },
+    { name: 'Advil 100 Liqui-Gels', category: 'Santé', basePrice: 13.99, unit: 'BOX', brandOptions: ['Advil'], isTaxed: true },
+    { name: 'Multivitamines Homme', category: 'Santé', basePrice: 16.50, unit: 'BOX', brandOptions: ['Centrum', 'Jamieson'], isTaxed: true },
+    { name: 'Dentifrice Menthe 120ml', category: 'Santé', basePrice: 3.29, unit: 'UNIT', brandOptions: ['Colgate', 'Crest', 'Sensodyne'], isTaxed: true },
+
+    // Carburant
+    { name: 'Essence Ordinaire 1L', category: 'Carburant', basePrice: 1.55, unit: 'LITRE', brandOptions: ['Shell', 'Petro-Canada', 'Esso'], isTaxed: true },
+    { name: 'Essence Super 1L', category: 'Carburant', basePrice: 1.79, unit: 'LITRE', brandOptions: ['Shell', 'Petro-Canada', 'Esso'], isTaxed: true },
+    { name: 'Lave-glace -40C 4L', category: 'Carburant', basePrice: 4.99, unit: 'LITRE', brandOptions: ['Shell', 'Rain-X'], isTaxed: true },
+
+    // Éducation
+    { name: 'Cahier d\'exercices A4', category: 'Éducation', basePrice: 2.49, unit: 'UNIT', brandOptions: ['Hilroy'], isTaxed: true },
+    { name: 'Sac à dos scolaire', category: 'Éducation', basePrice: 39.99, unit: 'UNIT', brandOptions: ['Jansport', 'High Sierra'], isTaxed: true },
+    { name: 'Stylos à bille 10x', category: 'Éducation', basePrice: 2.49, unit: 'PACK', brandOptions: ['Bic', 'Paper Mate'], isTaxed: true },
+
+    // Loisirs
+    { name: 'Jeu de société Monopoly', category: 'Loisirs', basePrice: 29.99, unit: 'UNIT', brandOptions: ['Hasbro'], isTaxed: true },
+    { name: 'Manette sans fil PS5', category: 'Loisirs', basePrice: 79.99, unit: 'UNIT', brandOptions: ['Sony'], isTaxed: true },
+    { name: 'Livre Best-Seller', category: 'Loisirs', basePrice: 18.99, unit: 'UNIT', brandOptions: ['Québec Amérique', 'Pocket'], isTaxed: true },
+    { name: 'Casque audio Bluetooth', category: 'Loisirs', basePrice: 79.99, unit: 'UNIT', brandOptions: ['Sony', 'JBL'], isTaxed: true },
+
+    // Vêtements
+    { name: 'T-Shirt Coton Noir', category: 'Vêtements', basePrice: 12.99, unit: 'UNIT', brandOptions: ['Hanes', 'Gildan'], isTaxed: true },
+    { name: 'Paires de Chaussettes 6x', category: 'Vêtements', basePrice: 9.99, unit: 'PACK', brandOptions: ['Under Armour', 'Puma'], isTaxed: true },
+    { name: 'Jeans Coupe Droite', category: 'Vêtements', basePrice: 59.99, unit: 'UNIT', brandOptions: ['Levi\'s', 'Wrangler'], isTaxed: true },
+    { name: 'Sweat à capuche zippé', category: 'Vêtements', basePrice: 34.99, unit: 'UNIT', brandOptions: ['Adidas', 'Nike'], isTaxed: true },
+
+    // Animaux
+    { name: 'Nourriture Sèche Chien 15kg', category: 'Animaux', basePrice: 42.99, unit: 'PACK', brandOptions: ['Purina', 'Iams'], isTaxed: true },
+    { name: 'Jouet à mâcher pour chien', category: 'Animaux', basePrice: 9.99, unit: 'UNIT', brandOptions: ['Kong'], isTaxed: true },
+    { name: 'Litière agglomérante 10kg', category: 'Animaux', basePrice: 14.99, unit: 'PACK', brandOptions: ['Purina', 'Cats Pride'], isTaxed: true },
+
+    // Électronique
+    { name: 'Câble de recharge USB-C 2m', category: 'Électronique', basePrice: 14.99, unit: 'UNIT', brandOptions: ['Anker', 'Belkin'], isTaxed: true },
+    { name: 'Carte mémoire MicroSD 128Go', category: 'Électronique', basePrice: 24.99, unit: 'UNIT', brandOptions: ['SanDisk', 'Samsung'], isTaxed: true },
+    { name: 'Ampoule intelligente LED', category: 'Électronique', basePrice: 24.99, unit: 'UNIT', brandOptions: ['Philips Hue', 'Noma'], isTaxed: true },
+
+    // Construction
+    { name: 'Jeu de Tournevis', category: 'Construction', basePrice: 34.99, unit: 'PACK', brandOptions: ['Mastercraft', 'Stanley'], isTaxed: true },
+    { name: 'Filtre de Fournaise', category: 'Construction', basePrice: 16.99, unit: 'UNIT', brandOptions: ['Garrison', '3M Filtrete'], isTaxed: true },
+    { name: 'Ruban à mesurer 8m', category: 'Construction', basePrice: 12.99, unit: 'UNIT', brandOptions: ['Stanley', 'Dewalt'], isTaxed: true },
+    { name: 'Marteau de menuisier', category: 'Construction', basePrice: 15.99, unit: 'UNIT', brandOptions: ['Stanley', 'Dewalt'], isTaxed: true },
+  ];
+
+  // Helper to generate a batch of invoices for a specific user
+  const generateUserInvoices = async (userId: string, storesMap: Record<string, string>, invoiceVolume: number) => {
+    let invoiceCounter = 1;
+
+    for (const m of months) {
+      // Determine number of invoices for this month
+      const count = invoiceVolume === 1 ? 2 : Math.floor(Math.random() * 5) + 12; // ~12 to 16 invoices per month for dad, 2 for mom
+
+      for (let i = 0; i < count; i++) {
+        // Select random store
+        const storeNames = Object.keys(storesMap);
+        const storeName = storeNames[Math.floor(Math.random() * storeNames.length)];
+        const storeId = storesMap[storeName];
+
+        // Select realistic day distributed over the month
+        const day = Math.min(28, i * 2 + Math.floor(Math.random() * 2) + 1);
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - m, day);
+
+        // Payment mode distribution
+        const paymentModes = ['DEBIT_CARD', 'CREDIT_CARD', 'CASH'];
+        const paymentMode = paymentModes[Math.floor(Math.random() * paymentModes.length)];
+
+        // Filter products compatible with store to make it realistic
+        let filteredProducts = seedProducts;
+        if (storeName === 'Shell') {
+          filteredProducts = seedProducts.filter(p => p.category === 'Carburant' || p.category === 'Alimentation');
+        } else if (storeName === 'Canadian Tire') {
+          filteredProducts = seedProducts.filter(p => p.category === 'Construction' || p.category === 'Loisirs' || p.category === 'Électronique');
+        } else if (storeName === 'Pharmaprix') {
+          filteredProducts = seedProducts.filter(p => p.category === 'Santé' || p.category === 'Produits ménagers' || p.category === 'Alimentation');
+        }
+
+        // Pick between 2 and 5 items
+        const numItems = Math.floor(Math.random() * 4) + 2;
+        const shuffled = [...filteredProducts].sort(() => 0.5 - Math.random());
+        const selectedProducts = shuffled.slice(0, Math.min(numItems, shuffled.length));
+
+        // Invoice totals
+        let totalSubtotal = 0;
+        let totalTaxes = 0;
+
+        const itemsToCreate: any[] = [];
+
+        for (const prod of selectedProducts) {
+          // Adjust base price based on store profile
+          let storeMultiplier = 1.0;
+          if (storeName === 'Costco') storeMultiplier = 0.88;
+          else if (storeName === 'No Frills') storeMultiplier = 0.93;
+          else if (storeName === 'Walmart') storeMultiplier = 0.95;
+          else if (storeName === 'Pharmaprix') storeMultiplier = 1.07;
+          else if (storeName === 'Shell') storeMultiplier = 1.03;
+
+          // Inflation multiplier: price gets cheaper as we go backward in time
+          const inflationRate = 0.005; // 0.5% per month
+          const timeMultiplier = 1 - (m * inflationRate);
+
+          // Calculate unit price with multiplier & minor jitter
+          const rawPrice = prod.basePrice * storeMultiplier * timeMultiplier + (Math.random() * 0.04 - 0.02);
+          const unitPrice = parseFloat(Math.max(0.5, rawPrice).toFixed(2));
+
+          // Quantity settings
+          let quantity = 1;
+          if (prod.category === 'Carburant' && prod.name.includes('Essence')) {
+            quantity = Math.floor(Math.random() * 21) + 35; // 35 to 55 liters
+          } else if (storeName === 'Costco') {
+            quantity = Math.floor(Math.random() * 3) + 2; // bulk quantity (2 to 4)
+          } else {
+            // 30% chance of multiple items
+            quantity = Math.random() < 0.3 ? Math.floor(Math.random() * 2) + 2 : 1;
+          }
+
+          // Calculate discounts
+          let discount = 0;
+          if (Math.random() < 0.15 && prod.category !== 'Carburant') {
+            discount = parseFloat((Math.min(quantity * unitPrice * 0.2, Math.floor(Math.random() * 3) + 0.5)).toFixed(2));
+          }
+
+          const totalPrice = parseFloat((quantity * unitPrice).toFixed(2));
+          const itemSubtotal = parseFloat((totalPrice - discount).toFixed(2));
+          const taxRate = prod.isTaxed ? 14.975 : 0; // Combined QC tax rate or similar
+          const itemTax = parseFloat((itemSubtotal * (taxRate / 100)).toFixed(2));
+
+          totalSubtotal += itemSubtotal;
+          totalTaxes += itemTax;
+
+          const brand = prod.brandOptions[Math.floor(Math.random() * prod.brandOptions.length)] || '';
+
+          itemsToCreate.push({
+            productName: prod.name,
+            categoryId: categoriesMap[prod.category] || categoriesMap['Autres'],
+            quantity,
+            unit: prod.unit,
+            unitPrice,
+            totalPrice,
+            taxRate,
+            discount,
+            netPrice: itemSubtotal,
+            brand,
+          });
+        }
+
+        // Global discount / loyalty
+        let globalDiscounts = 0;
+        if (Math.random() < 0.08) {
+          globalDiscounts = parseFloat((Math.min(totalSubtotal * 0.1, Math.floor(Math.random() * 5) + 1)).toFixed(2));
+        }
+
+        const totalAmount = parseFloat((totalSubtotal + totalTaxes - globalDiscounts).toFixed(2));
+        const storeCode = storeName.toUpperCase().slice(0, 3);
+        const invoiceNumber = `${storeCode}-${currentDate.getFullYear()}${(currentDate.getMonth() - m + 1).toString().padStart(2, '0')}-${invoiceCounter.toString().padStart(4, '0')}`;
+        invoiceCounter++;
+
+        const inv = await prisma.invoice.create({
+          data: {
+            invoiceNumber,
+            date,
+            paymentMode,
+            totalAmount,
+            totalTaxes: parseFloat(totalTaxes.toFixed(2)),
+            globalDiscounts,
+            comments: `Achat régulier chez ${storeName}`,
+            storeId,
+            userId,
+          }
+        });
+
+        for (const item of itemsToCreate) {
+          await prisma.invoiceItem.create({
+            data: {
+              ...item,
+              invoiceId: inv.id,
+            }
+          });
+        }
+      }
+    }
+  };
+
+  // Generate Invoices for dad (high volume - approx 170-180 invoices total)
+  console.log('Generating dad invoices...');
+  await generateUserInvoices(dad.id, dadStoresMap, 15);
+
+  // Generate Invoices for mom (low volume - approx 24 invoices total)
+  console.log('Generating mom invoices...');
+  await generateUserInvoices(mom.id, momStoresMap, 1);
+
+  console.log('Invoices and items created.');
+
+  // 6. Set Budgets for dad and mom
+  // Budgets for dad over the last 12 months
+  const thisYear = currentDate.getFullYear();
+  const thisMonth = currentDate.getMonth() + 1; // 1-12
+
+  // Create budgets for dad for the current month and the past 2 months
+  const budgetMonths = [thisMonth, thisMonth - 1 <= 0 ? 12 : thisMonth - 1, thisMonth - 2 <= 0 ? 11 : thisMonth - 2];
   
-  for (const m of months) {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - m, 15);
-    
-    // Monthly Milk purchases
-    // Costco purchase (Usually cheaper)
-    if (m % 2 === 0) {
-      const milkCostcoPrice = parseFloat((4.10 + (m * -0.05)).toFixed(2)); // price rose over time
-      const riceCostcoPrice = parseFloat((10.99 + (m * -0.10)).toFixed(2));
-      
-      const invTotal = parseFloat((milkCostcoPrice * 4 + riceCostcoPrice + 1.20).toFixed(2));
-      const inv = await prisma.invoice.create({
-        data: {
-          invoiceNumber: `CST-2026-${12 - m}`,
-          date,
-          paymentMode: 'CREDIT_CARD',
-          totalAmount: invTotal,
-          totalTaxes: parseFloat((invTotal * 0.05).toFixed(2)),
-          globalDiscounts: 0,
-          comments: 'Monthly Costco haul',
-          storeId: storesMap['Costco'],
-          userId: dad.id,
-        }
-      });
-      
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Lait 2L',
-          categoryId: categoriesMap['Alimentation'],
-          quantity: 4,
-          unit: 'LITRE',
-          unitPrice: milkCostcoPrice,
-          totalPrice: milkCostcoPrice * 4,
-          taxRate: 0,
-          discount: 0,
-          netPrice: milkCostcoPrice * 4,
-          brand: 'Québon',
-          invoiceId: inv.id
-        }
-      });
+  for (const bm of budgetMonths) {
+    const by = bm > thisMonth ? thisYear - 1 : thisYear;
 
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Riz 5kg',
-          categoryId: categoriesMap['Alimentation'],
-          quantity: 1,
-          unit: 'KG',
-          unitPrice: riceCostcoPrice,
-          totalPrice: riceCostcoPrice,
-          taxRate: 0,
-          discount: 0,
-          netPrice: riceCostcoPrice,
-          brand: 'Uncle Ben\'s',
-          invoiceId: inv.id
-        }
-      });
-    }
-
-    // Walmart purchase
-    if (m % 3 === 0) {
-      const milkWalmartPrice = parseFloat((4.40 + (m * -0.05)).toFixed(2));
-      const eggWalmartPrice = parseFloat((3.80 + (m * -0.04)).toFixed(2));
-      
-      const invTotal = parseFloat((milkWalmartPrice * 2 + eggWalmartPrice * 2).toFixed(2));
-      
-      const inv = await prisma.invoice.create({
-        data: {
-          invoiceNumber: `WMT-2026-${12 - m}`,
-          date,
-          paymentMode: 'DEBIT_CARD',
-          totalAmount: invTotal,
-          totalTaxes: 0,
-          storeId: storesMap['Walmart'],
-          userId: dad.id,
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Lait 2L',
-          categoryId: categoriesMap['Alimentation'],
-          quantity: 2,
-          unit: 'LITRE',
-          unitPrice: milkWalmartPrice,
-          totalPrice: milkWalmartPrice * 2,
-          taxRate: 0,
-          netPrice: milkWalmartPrice * 2,
-          brand: 'Beatrice',
-          invoiceId: inv.id
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Œufs 12',
-          categoryId: categoriesMap['Alimentation'],
-          quantity: 2,
-          unit: 'UNIT',
-          unitPrice: eggWalmartPrice,
-          totalPrice: eggWalmartPrice * 2,
-          taxRate: 0,
-          netPrice: eggWalmartPrice * 2,
-          brand: 'Selection',
-          invoiceId: inv.id
-        }
-      });
-    }
-
-    // No Frills purchase (Simulating where they might pay more)
-    if (m % 4 === 0) {
-      const milkNoFrillsPrice = parseFloat((4.50 + (m * -0.05)).toFixed(2));
-      const riceNoFrillsPrice = parseFloat((12.90 + (m * -0.11)).toFixed(2));
-      const invTotal = parseFloat((milkNoFrillsPrice * 2 + riceNoFrillsPrice).toFixed(2));
-      
-      const inv = await prisma.invoice.create({
-        data: {
-          invoiceNumber: `NF-2026-${12 - m}`,
-          date,
-          paymentMode: 'CASH',
-          totalAmount: invTotal,
-          totalTaxes: 0,
-          storeId: storesMap['No Frills'],
-          userId: mom.id,
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Lait 2L',
-          categoryId: categoriesMap['Alimentation'],
-          quantity: 2,
-          unit: 'LITRE',
-          unitPrice: milkNoFrillsPrice,
-          totalPrice: milkNoFrillsPrice * 2,
-          taxRate: 0,
-          netPrice: milkNoFrillsPrice * 2,
-          brand: 'Lactantia',
-          invoiceId: inv.id
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Riz 5kg',
-          categoryId: categoriesMap['Alimentation'],
-          quantity: 1,
-          unit: 'KG',
-          unitPrice: riceNoFrillsPrice,
-          totalPrice: riceNoFrillsPrice,
-          taxRate: 0,
-          netPrice: riceNoFrillsPrice,
-          brand: 'Dano',
-          invoiceId: inv.id
-        }
-      });
-    }
-
-    // Gas station purchase (Shell)
-    const fuelPrice = parseFloat((1.45 + (m * 0.02) + (Math.sin(m) * 0.05)).toFixed(2)); // fluctuating
-    const fuelTotal = parseFloat((fuelPrice * 45).toFixed(2));
-    const gasInv = await prisma.invoice.create({
+    await prisma.budget.create({
       data: {
-        invoiceNumber: `SHL-2026-${12 - m}`,
-        date,
-        paymentMode: 'CREDIT_CARD',
-        totalAmount: fuelTotal,
-        totalTaxes: parseFloat((fuelTotal * 0.15).toFixed(2)),
-        storeId: storesMap['Shell'],
+        amount: 500.0,
+        month: bm,
+        year: by,
+        categoryId: categoriesMap['Alimentation'],
         userId: dad.id,
       }
     });
 
-    await prisma.invoiceItem.create({
+    await prisma.budget.create({
       data: {
-        productName: 'Essence Ordinaire 1L',
+        amount: 200.0,
+        month: bm,
+        year: by,
         categoryId: categoriesMap['Carburant'],
-        quantity: 45,
-        unit: 'LITRE',
-        unitPrice: fuelPrice,
-        totalPrice: fuelTotal,
-        taxRate: 15.0,
-        netPrice: fuelTotal,
-        invoiceId: gasInv.id
+        userId: dad.id,
       }
     });
 
-    // Pharmacy purchase (Pharmaprix)
-    if (m % 3 === 1) {
-      const phTotal = 32.50;
-      const phInv = await prisma.invoice.create({
-        data: {
-          invoiceNumber: `PHM-2026-${12 - m}`,
-          date,
-          paymentMode: 'DEBIT_CARD',
-          totalAmount: phTotal,
-          totalTaxes: 4.88,
-          storeId: storesMap['Pharmaprix'],
-          userId: mom.id,
-        }
-      });
+    await prisma.budget.create({
+      data: {
+        amount: 100.0,
+        month: bm,
+        year: by,
+        categoryId: categoriesMap['Loisirs'],
+        userId: dad.id,
+      }
+    });
 
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Tylenol Extra-Fort',
-          categoryId: categoriesMap['Santé'],
-          quantity: 1,
-          unit: 'BOX',
-          unitPrice: 12.99,
-          totalPrice: 12.99,
-          taxRate: 15.0,
-          netPrice: 14.94,
-          brand: 'Tylenol',
-          invoiceId: phInv.id
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Savon liquide mains',
-          categoryId: categoriesMap['Produits ménagers'],
-          quantity: 3,
-          unit: 'UNIT',
-          unitPrice: 4.50,
-          totalPrice: 13.50,
-          taxRate: 15.0,
-          netPrice: 15.53,
-          brand: 'Softsoap',
-          invoiceId: phInv.id
-        }
-      });
-    }
-
-    // Hardware purchase (Canadian Tire)
-    if (m === 2 || m === 6) {
-      const ctTotal = 85.00;
-      const ctInv = await prisma.invoice.create({
-        data: {
-          invoiceNumber: `CT-2026-${12 - m}`,
-          date,
-          paymentMode: 'CREDIT_CARD',
-          totalAmount: ctTotal,
-          totalTaxes: 12.75,
-          storeId: storesMap['Canadian Tire'],
-          userId: dad.id,
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Jeu de Tournevis',
-          categoryId: categoriesMap['Construction'],
-          quantity: 1,
-          unit: 'UNIT',
-          unitPrice: 39.99,
-          totalPrice: 39.99,
-          taxRate: 15.0,
-          netPrice: 45.99,
-          brand: 'Mastercraft',
-          invoiceId: ctInv.id
-        }
-      });
-
-      await prisma.invoiceItem.create({
-        data: {
-          productName: 'Filtre de Fournaise',
-          categoryId: categoriesMap['Construction'],
-          quantity: 2,
-          unit: 'UNIT',
-          unitPrice: 17.50,
-          totalPrice: 35.00,
-          taxRate: 15.0,
-          netPrice: 40.25,
-          brand: 'Garrison',
-          invoiceId: ctInv.id
-        }
-      });
-    }
+    await prisma.budget.create({
+      data: {
+        amount: 80.0,
+        month: bm,
+        year: by,
+        categoryId: categoriesMap['Produits ménagers'],
+        userId: dad.id,
+      }
+    });
   }
-
-  console.log('Invoices and items created.');
-
-  // 6. Set Budgets for dad
-  // Budget for Alimentation: $400 / month
-  // Budget for Carburant: $150 / month
-  // Let's create budgets for the current year, and a specific budget for the current month.
-  const thisYear = currentDate.getFullYear();
-  const thisMonth = currentDate.getMonth() + 1; // 1-12
-  
-  await prisma.budget.create({
-    data: {
-      amount: 400.0,
-      month: thisMonth,
-      year: thisYear,
-      categoryId: categoriesMap['Alimentation'],
-      userId: dad.id,
-    }
-  });
-
-  await prisma.budget.create({
-    data: {
-      amount: 150.0,
-      month: thisMonth,
-      year: thisYear,
-      categoryId: categoriesMap['Carburant'],
-      userId: dad.id,
-    }
-  });
-
-  await prisma.budget.create({
-    data: {
-      amount: 50.0,
-      month: thisMonth,
-      year: thisYear,
-      categoryId: categoriesMap['Loisirs'],
-      userId: dad.id,
-    }
-  });
 
   console.log('Budgets created.');
 

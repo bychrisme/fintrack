@@ -10,6 +10,7 @@ import { BudgetsModule } from './budgets/budgets.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ReportsModule } from './reports/reports.module';
 import { ProductsModule } from './products/products.module';
+import { LocationsModule } from './locations/locations.module';
 
 @Module({
   imports: [
@@ -22,8 +23,10 @@ import { ProductsModule } from './products/products.module';
     AnalyticsModule,
     ReportsModule,
     ProductsModule,
+    LocationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

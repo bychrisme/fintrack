@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { Search, TrendingDown, ArrowUpDown } from 'lucide-react';
+import { Search, TrendingDown, ArrowUpDown, X } from 'lucide-react';
 
 export const PriceComparison: React.FC = () => {
   const { user } = useAuth();
-  const [productName, setProductName] = useState('Lait 2L');
+  const [productName, setProductName] = useState('');
   const [comparison, setComparison] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [uniqueProducts, setUniqueProducts] = useState<any[]>([]);
 
   const handleSearch = async (e?: React.FormEvent) => {
@@ -33,7 +33,6 @@ export const PriceComparison: React.FC = () => {
   };
 
   useEffect(() => {
-    handleSearch();
     fetchUniqueProducts();
   }, []);
 
@@ -91,24 +90,63 @@ export const PriceComparison: React.FC = () => {
         gap: '0.75rem',
         marginBottom: '2rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, position: 'relative' }}>
           <Search size={20} style={{ color: 'hsl(var(--muted))' }} />
           <input
             type="text"
             list="comparison-products-datalist"
             className="form-control"
-            style={{ width: '100%', border: 'none', background: 'transparent' }}
+            style={{ width: '100%', border: 'none', background: 'transparent', paddingRight: '2.5rem' }}
             placeholder="Entrez le nom d'un produit (ex: Lait 2L, Riz 5kg, Essence...)"
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
             required
           />
+          {productName && (
+            <button
+              type="button"
+              onClick={() => {
+                setProductName('');
+                setComparison(null);
+              }}
+              style={{
+                position: 'absolute',
+                right: '0.5rem',
+                background: 'transparent',
+                border: 'none',
+                color: 'hsl(var(--muted))',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.25rem',
+                borderRadius: '50%',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--secondary))'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         <button type="submit" className="btn btn-primary">Comparer les prix</button>
       </form>
 
       {loading ? (
         <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Recherche en cours...</div>
+      ) : comparison === null ? (
+        <div style={{
+          padding: '4rem',
+          textAlign: 'center',
+          backgroundColor: 'hsl(var(--card))',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid hsl(var(--card-border))',
+          color: 'hsl(var(--muted))'
+        }}>
+          Saisissez le nom d'un produit ci-dessus pour comparer ses prix.
+          <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Astuce : Essayez "Lait 2L" ou "Riz 5kg".</div>
+        </div>
       ) : !comparison?.found ? (
         <div style={{
           padding: '4rem',

@@ -58,6 +58,14 @@ export const api = {
     delete: (id: string) => request(`/stores/${id}`, { method: 'DELETE' }),
   },
 
+  // Locations
+  locations: {
+    getCountries: () => request('/locations/countries'),
+    getRegions: (countryName: string) => request(`/locations/regions?countryName=${encodeURIComponent(countryName)}`),
+    getCities: (countryName: string, regionName: string) => request(`/locations/cities?countryName=${encodeURIComponent(countryName)}&regionName=${encodeURIComponent(regionName)}`),
+  },
+
+
   // Categories
   categories: {
     findAll: () => request('/categories'),
@@ -92,9 +100,11 @@ export const api = {
   // Analytics
   analytics: {
     getDashboard: () => request('/analytics/dashboard'),
+    getKpiDetails: () => request('/analytics/kpi-details'),
     comparePrices: (productName: string) => request(`/analytics/prices?productName=${encodeURIComponent(productName)}`),
     getConsumption: () => request('/analytics/consumption'),
     getAlerts: () => request('/analytics/alerts'),
+    getProductHistory: (productName: string) => request(`/analytics/product-history?productName=${encodeURIComponent(productName)}`),
   },
 
   // Reports
