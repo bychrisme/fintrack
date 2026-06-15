@@ -1181,12 +1181,12 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Ville *</label>
+                      <label>Pays *</label>
                       <Autocomplete
-                        value={newStoreCity}
-                        onChange={setNewStoreCity}
-                        suggestions={availableCities.map((c: any) => c.name)}
-                        placeholder="Ex: Montréal"
+                        value={newStoreCountry}
+                        onChange={handleCountryChange}
+                        suggestions={availableCountries.map((c: any) => c.name)}
+                        placeholder="Ex: Canada"
                         required
                       />
                     </div>
@@ -1205,12 +1205,12 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Pays *</label>
+                      <label>Ville *</label>
                       <Autocomplete
-                        value={newStoreCountry}
-                        onChange={handleCountryChange}
-                        suggestions={availableCountries.map((c: any) => c.name)}
-                        placeholder="Ex: Canada"
+                        value={newStoreCity}
+                        onChange={setNewStoreCity}
+                        suggestions={availableCities.map((c: any) => c.name)}
+                        placeholder="Ex: Montréal"
                         required
                       />
                     </div>

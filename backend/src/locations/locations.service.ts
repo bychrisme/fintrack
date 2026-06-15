@@ -32,27 +32,48 @@ export class LocationsService {
   }
 
   async getCities(countryName: string, regionName: string) {
-    if (!countryName || !regionName) return [];
+    if (!countryName) return [];
 
-    const region = await this.prisma.region.findFirst({
+    const country = await this.prisma.country.findFirst({
       where: {
         name: {
-          equals: regionName.trim(),
+          equals: countryName.trim(),
           mode: 'insensitive',
-        },
-        country: {
-          name: {
-            equals: countryName.trim(),
-            mode: 'insensitive',
-          },
         },
       },
     });
 
-    if (!region) return [];
+    if (!country) return [];
 
+    if (regionName) {
+      const region = await this.prisma.region.findFirst({
+        where: {
+          name: {
+            equals: regionName.trim(),
+            mode: 'insensitive',
+          },
+          countryId: country.id,
+        },
+      });
+
+      if (region) {
+        const regionCities = await this.prisma.city.findMany({
+          where: { regionId: region.id },
+          orderBy: { name: 'asc' },
+        });
+        if (regionCities.length > 0) {
+          return regionCities;
+        }
+      }
+    }
+
+    // Fallback: return all cities of the country
     return this.prisma.city.findMany({
-      where: { regionId: region.id },
+      where: {
+        region: {
+          countryId: country.id,
+        },
+      },
       orderBy: { name: 'asc' },
     });
   }
