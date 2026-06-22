@@ -570,3 +570,254 @@ body {
     flex: 1 1 auto;
   }
 }
+
+/* Tooltips */
+.tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  cursor: help;
+  color: hsl(var(--muted));
+  vertical-align: middle;
+}
+
+.tooltip-container:hover {
+  color: hsl(var(--primary));
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 220px;
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  text-align: left;
+  border: 1px solid hsl(var(--card-border));
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(8px);
+  position: absolute;
+  z-index: 100;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -110px;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(5px);
+  pointer-events: none;
+}
+
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: hsl(var(--card-border)) transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Onboarding Product Tour */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 99998;
+  pointer-events: auto;
+  transition: opacity 0.3s ease;
+}
+
+.tour-highlight {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65), 0 0 15px rgba(59, 130, 246, 0.45);
+  border: 2px solid hsl(var(--primary));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  background-color: transparent;
+}
+
+.tour-tooltip {
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--card-border));
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: tour-pop 0.3s ease;
+}
+
+@keyframes tour-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.tour-tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tour-step-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+
+.tour-close-btn {
+  background: transparent;
+  border: none;
+  color: hsl(var(--muted));
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.tour-close-btn:hover {
+  background-color: hsl(var(--muted-dark) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+.tour-tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tour-tooltip-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.tour-tooltip-content {
+  font-size: 0.8rem;
+  color: hsl(var(--muted));
+  line-height: 1.45;
+}
+
+.tour-tooltip-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid hsl(var(--card-border));
+  padding-top: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.tour-stepper-dots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: hsl(var(--muted-dark) / 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tour-dot:hover {
+  background-color: hsl(var(--primary) / 0.6);
+}
+
+.tour-dot.active {
+  width: 16px;
+  border-radius: 3px;
+  background-color: hsl(var(--primary));
+}
+
+.tour-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tour-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+/* Tooltip placements arrow style */
+.tour-tooltip::after {
+  content: "";
+  position: absolute;
+  border-width: 8px;
+  border-style: solid;
+  pointer-events: none;
+}
+
+.tour-tooltip-bottom::after {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-color: transparent transparent hsl(var(--card)) transparent;
+}
+
+.tour-tooltip-top::after {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-color: hsl(var(--card)) transparent transparent transparent;
+}
+
+/* Responsive layout adjustments for mobiles */
+@media (max-width: 600px) {
+  .tour-tooltip {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    animation: tour-slide-up 0.3s ease !important;
+  }
+  .tour-tooltip::after {
+    display: none !important;
+  }
+}
+
+@keyframes tour-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Hide desktop label text on mobile guide button if space is constrained */
+@media (max-width: 576px) {
+  .hide-mobile {
+    display: none;
+  }
+}
+

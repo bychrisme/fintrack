@@ -13,7 +13,7 @@ const CategoryIcon: React.FC<{ name: string; size?: number; style?: React.CSSPro
 };
 
 export const Products: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   // Data states
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -414,7 +414,7 @@ export const Products: React.FC = () => {
                     value={name}
                     onChange={setName}
                     suggestions={products.map((p: any) => p.name)}
-                    placeholder="Ex: Lait Lactantia 2%"
+                    placeholder={language === 'fr' ? "Ex: Lait Lactantia 2%" : "e.g. 2% Lactantia Milk"}
                     required
                   />
                 </div>

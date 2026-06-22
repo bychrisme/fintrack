@@ -4,7 +4,7 @@ import { useLanguage } from '../LanguageContext';
 
 export const Auth: React.FC = () => {
   const { login, register } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +86,7 @@ export const Auth: React.FC = () => {
                 className="form-control"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Jean Tremblay"
+                placeholder={language === 'fr' ? "Ex: Jean Tremblay" : "e.g. John Doe"}
                 required={!isLogin}
               />
             </div>
@@ -100,7 +100,7 @@ export const Auth: React.FC = () => {
               className="form-control"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nom@exemple.com"
+              placeholder={language === 'fr' ? "nom@exemple.com" : "name@example.com"}
               required
             />
           </div>

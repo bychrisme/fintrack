@@ -8,7 +8,7 @@ import { Store, MapPin, ShoppingBag, Plus, Edit, Trash, X, Search } from 'lucide
 
 export const Stores: React.FC = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [storeStats, setStoreStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -441,7 +441,7 @@ export const Stores: React.FC = () => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Ex: Walmart"
+                    placeholder={language === 'fr' ? "Ex: Walmart" : "e.g. Walmart"}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -455,7 +455,7 @@ export const Stores: React.FC = () => {
                       value={country}
                       onChange={handleCountryChange}
                       suggestions={availableCountries.map((c: any) => c.name)}
-                      placeholder="Ex: Canada"
+                      placeholder={language === 'fr' ? "Ex: Canada" : "e.g. Canada"}
                       required
                     />
                   </div>
@@ -466,7 +466,7 @@ export const Stores: React.FC = () => {
                       value={province}
                       onChange={handleProvinceChange}
                       suggestions={availableProvinces.map((p: any) => p.name)}
-                      placeholder="Ex: Québec"
+                      placeholder={language === 'fr' ? "Ex: Québec" : "e.g. Quebec"}
                       required
                     />
                   </div>
@@ -479,7 +479,7 @@ export const Stores: React.FC = () => {
                       value={city}
                       onChange={setCity}
                       suggestions={availableCities.map((c: any) => c.name)}
-                      placeholder="Ex: Montréal"
+                      placeholder={language === 'fr' ? "Ex: Montréal" : "e.g. Montreal"}
                       required
                     />
                   </div>
@@ -503,7 +503,7 @@ export const Stores: React.FC = () => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Ex: 123 Rue de la Montagne"
+                    placeholder={language === 'fr' ? "Ex: 123 Rue de la Montagne" : "e.g. 123 Mountain Road"}
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                   />
@@ -515,7 +515,7 @@ export const Stores: React.FC = () => {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="Ex: 514-555-0199"
+                      placeholder={language === 'fr' ? "Ex: 514-555-0199" : "e.g. 514-555-0199"}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
@@ -526,7 +526,7 @@ export const Stores: React.FC = () => {
                     <input
                       type="url"
                       className="form-control"
-                      placeholder="Ex: https://www.walmart.ca"
+                      placeholder={language === 'fr' ? "Ex: https://www.walmart.ca" : "e.g. https://www.walmart.ca"}
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
                     />

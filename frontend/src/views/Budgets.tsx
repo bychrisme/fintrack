@@ -253,7 +253,7 @@ export const Budgets: React.FC = () => {
                 type="number"
                 step="0.01"
                 className="form-control"
-                placeholder="Ex: 400.00"
+                placeholder={language === 'fr' ? "Ex: 400.00" : "e.g. 400.00"}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
