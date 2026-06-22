@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
+import { Autocomplete } from '../components/Autocomplete';
 import { Search, TrendingDown, ArrowUpDown, X } from 'lucide-react';
 
 export const PriceComparison: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [productName, setProductName] = useState('');
   const [comparison, setComparison] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -76,8 +79,8 @@ export const PriceComparison: React.FC = () => {
     <div className="animate-fade-in">
       <div className="flex-header">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Comparateur & Historique des Prix</h1>
-          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Analysez les écarts de prix entre magasins et suivez la courbe d'inflation par produit.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('comp.title')}</h1>
+          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>{t('comp.subtitle')}</p>
         </div>
       </div>
 
@@ -91,16 +94,14 @@ export const PriceComparison: React.FC = () => {
         marginBottom: '2rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, position: 'relative' }}>
-          <Search size={20} style={{ color: 'hsl(var(--muted))' }} />
-          <input
-            type="text"
-            list="comparison-products-datalist"
-            className="form-control"
-            style={{ width: '100%', border: 'none', background: 'transparent', paddingRight: '2.5rem' }}
-            placeholder="Entrez le nom d'un produit (ex: Lait 2L, Riz 5kg, Essence...)"
+          <Search size={20} style={{ color: 'hsl(var(--muted))', position: 'absolute', left: '0.75rem', zIndex: 5 }} />
+          <Autocomplete
             value={productName}
-            onChange={(e) => setProductName(e.target.value)}
+            onChange={setProductName}
+            suggestions={uniqueProducts.map((p: any) => p.productName)}
+            placeholder={t('comp.search.placeholder')}
             required
+            inputStyle={{ border: 'none', backgroundColor: 'transparent', paddingLeft: '2.5rem', paddingRight: productName ? '3.5rem' : '2.5rem' }}
           />
           {productName && (
             <button
@@ -111,7 +112,7 @@ export const PriceComparison: React.FC = () => {
               }}
               style={{
                 position: 'absolute',
-                right: '0.5rem',
+                right: '2.2rem',
                 background: 'transparent',
                 border: 'none',
                 color: 'hsl(var(--muted))',
@@ -122,6 +123,7 @@ export const PriceComparison: React.FC = () => {
                 padding: '0.25rem',
                 borderRadius: '50%',
                 transition: 'background-color 0.2s',
+                zIndex: 5
               }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--secondary))'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
@@ -130,11 +132,11 @@ export const PriceComparison: React.FC = () => {
             </button>
           )}
         </div>
-        <button type="submit" className="btn btn-primary">Comparer les prix</button>
+        <button type="submit" className="btn btn-primary">{t('comp.btn.search')}</button>
       </form>
 
       {loading ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Recherche en cours...</div>
+        <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>{t('comp.status.searching')}</div>
       ) : comparison === null ? (
         <div style={{
           padding: '4rem',
@@ -144,8 +146,8 @@ export const PriceComparison: React.FC = () => {
           border: '1px solid hsl(var(--card-border))',
           color: 'hsl(var(--muted))'
         }}>
-          Saisissez le nom d'un produit ci-dessus pour comparer ses prix.
-          <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Astuce : Essayez "Lait 2L" ou "Riz 5kg".</div>
+          {t('comp.placeholder')}
+          <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>{t('comp.placeholder.tip')}</div>
         </div>
       ) : !comparison?.found ? (
         <div style={{
@@ -156,8 +158,8 @@ export const PriceComparison: React.FC = () => {
           border: '1px solid hsl(var(--card-border))',
           color: 'hsl(var(--muted))'
         }}>
-          Aucun produit correspondant trouvé dans votre historique de factures.
-          <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Astuce : Essayez "Lait 2L" ou "Riz 5kg".</div>
+          {t('comp.no_data')}
+          <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>{t('comp.placeholder.tip')}</div>
         </div>
       ) : (
         <div className="animate-fade-in">
@@ -165,27 +167,29 @@ export const PriceComparison: React.FC = () => {
           {/* Key Metrics Cards */}
           <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', marginBottom: '2rem' }}>
             <div className="stat-card">
-              <div className="stat-title">Prix Minimum</div>
+              <div className="stat-title">{t('comp.kpi.min')}</div>
               <div className="stat-value" style={{ color: 'hsl(var(--success))' }}>{stats.min.toFixed(2)} {user?.currency || '$'}</div>
-              <div className="stat-footer">Disponible chez <span style={{ fontWeight: 600 }}>{stats.cheapestStore}</span></div>
+              <div className="stat-footer">{t('comp.kpi.min.desc')} <span style={{ fontWeight: 600 }}>{stats.cheapestStore}</span></div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-title">Prix Maximum</div>
+              <div className="stat-title">{t('comp.kpi.max')}</div>
               <div className="stat-value" style={{ color: 'hsl(var(--destructive))' }}>{stats.max.toFixed(2)} {user?.currency || '$'}</div>
-              <div className="stat-footer">Constaté en magasin</div>
+              <div className="stat-footer">{t('comp.kpi.max.desc')}</div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-title">Prix Moyen</div>
+              <div className="stat-title">{t('comp.kpi.avg')}</div>
               <div className="stat-value">{stats.average.toFixed(2)} {user?.currency || '$'}</div>
-              <div className="stat-footer">Moyenne de l'historique</div>
+              <div className="stat-footer">{t('comp.kpi.avg.desc')}</div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-title">Écart (Spread)</div>
+              <div className="stat-title">{t('comp.kpi.spread')}</div>
               <div className="stat-value" style={{ color: 'hsl(var(--primary))' }}>{stats.spread.toFixed(2)} {user?.currency || '$'}</div>
-              <div className="stat-footer">Différence Max - Min ({( (stats.spread / stats.min) * 100 ).toFixed(0)}% d'écart)</div>
+              <div className="stat-footer">
+                {t('comp.kpi.spread.footer').replace('{percent}', (stats.min > 0 ? ((stats.spread / stats.min) * 100) : 0).toFixed(0))}
+              </div>
             </div>
           </div>
 
@@ -195,14 +199,14 @@ export const PriceComparison: React.FC = () => {
             <div className="stat-card">
               <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <ArrowUpDown size={18} />
-                Dernier Prix par Enseigne
+                {t('comp.table.title')}
               </h2>
               <table className="data-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th>Magasin</th>
-                    <th style={{ textAlign: 'right' }}>Prix</th>
-                    <th>Dernier Achat</th>
+                    <th>{t('comp.table.col.store')}</th>
+                    <th style={{ textAlign: 'right' }}>{t('comp.table.col.price')}</th>
+                    <th>{t('comp.table.col.date')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,12 +229,12 @@ export const PriceComparison: React.FC = () => {
             <div className="stat-card" style={{ display: 'flex', flexDirection: 'column' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <TrendingDown size={18} />
-                Évolution Historique & Inflation
+                {t('comp.chart.title')}
               </h2>
               
               <div style={{ flex: 1, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 {history.length < 2 ? (
-                  <div style={{ color: 'hsl(var(--muted))', fontSize: '0.85rem' }}>Données historiques insuffisantes pour tracer le graphique.</div>
+                  <div style={{ color: 'hsl(var(--muted))', fontSize: '0.85rem' }}>{t('comp.chart.no_data')}</div>
                 ) : (
                   <div style={{ width: '100%', overflowX: 'auto' }}>
                     <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">

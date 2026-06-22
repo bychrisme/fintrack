@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
 import { Autocomplete } from '../components/Autocomplete';
 import { Store, MapPin, ShoppingBag, Plus, Edit, Trash, X, Search } from 'lucide-react';
 
 export const Stores: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [storeStats, setStoreStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -156,20 +158,20 @@ export const Stores: React.FC = () => {
         }
       }
     } catch (err) {
-      alert('Erreur lors du chargement des détails du magasin');
+      alert(t('store.error.load'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteStore = async (id: string) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce magasin ? Cette action supprimera également toutes les factures associées.')) return;
+    if (!window.confirm(t('store.delete.confirm'))) return;
     try {
       setLoading(true);
       await api.stores.delete(id);
       await fetchStoreStats();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la suppression du magasin');
+      alert(err.message || t('store.error.delete'));
     } finally {
       setLoading(false);
     }
@@ -199,26 +201,26 @@ export const Stores: React.FC = () => {
       setIsModalOpen(false);
       await fetchStoreStats();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de l\'enregistrement du magasin');
+      alert(err.message || t('store.error.save'));
     } finally {
       setFormLoading(false);
     }
   };
 
   if (loading && storeStats.length === 0) {
-    return <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Chargement des données magasins...</div>;
+    return <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>{t('store.loading')}</div>;
   }
 
   return (
     <div className="animate-fade-in">
       <div className="flex-header">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Analyse par Magasin</h1>
-          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Comparez le ticket moyen, les dépenses totales et les produits préférés par enseigne.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('store.title')}</h1>
+          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>{t('store.subtitle')}</p>
         </div>
         <button onClick={openAddModal} className="btn btn-primary" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <Plus size={16} />
-          Ajouter un magasin
+          {t('store.btn.add')}
         </button>
       </div>
 
@@ -232,7 +234,7 @@ export const Stores: React.FC = () => {
         <input
           type="text"
           className="form-control"
-          placeholder="Rechercher un magasin par son nom..."
+          placeholder={t('store.filter.search_placeholder')}
           value={searchQuery}
           onChange={handleSearchChange}
           style={{
@@ -281,11 +283,11 @@ export const Stores: React.FC = () => {
 
       {storeStats.length === 0 ? (
         <div style={{ padding: '4rem', textAlign: 'center', backgroundColor: 'hsl(var(--card))', borderRadius: 'var(--radius-lg)', border: '1px solid hsl(var(--card-border))', color: 'hsl(var(--muted))' }}>
-          Aucun magasin enregistré.
+          {t('store.empty')}
         </div>
       ) : filteredStores.length === 0 ? (
         <div style={{ padding: '4rem', textAlign: 'center', backgroundColor: 'hsl(var(--card))', borderRadius: 'var(--radius-lg)', border: '1px solid hsl(var(--card-border))', color: 'hsl(var(--muted))' }}>
-          Aucun magasin ne correspond à "{searchQuery}".
+          {t('store.empty_search').replace('{query}', searchQuery)}
         </div>
       ) : (
         <>
@@ -308,16 +310,16 @@ export const Stores: React.FC = () => {
                       <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>{store.name}</h2>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'hsl(var(--muted))' }}>
                         <MapPin size={12} />
-                        <span>{store.city}, {store.type}</span>
+                        <span>{store.city}, {t('store.type.' + store.type.toLowerCase())}</span>
                       </div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
-                    <button onClick={() => openEditModal(store)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--muted))' }} title="Modifier">
+                    <button onClick={() => openEditModal(store)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--muted))' }} title={t('common.update')}>
                       <Edit size={15} />
                     </button>
-                    <button onClick={() => handleDeleteStore(store.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--destructive))' }} title="Supprimer">
+                    <button onClick={() => handleDeleteStore(store.id)} className="btn btn-ghost" style={{ padding: '0.4rem', color: 'hsl(var(--destructive))' }} title={t('common.confirm.delete')}>
                       <Trash size={15} />
                     </button>
                   </div>
@@ -326,17 +328,17 @@ export const Stores: React.FC = () => {
                 {/* Financial indicators */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', backgroundColor: 'hsl(var(--muted-dark))', borderRadius: 'var(--radius-md)' }}>
                   <div>
-                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>Dépenses Totales</span>
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>{t('store.card.spent_title')}</span>
                     <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'hsl(var(--primary))' }}>{store.totalSpent.toFixed(2)} {user?.currency || '$'}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>Ticket Moyen</span>
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', display: 'block' }}>{t('store.card.avg')}</span>
                     <span style={{ fontSize: '1.15rem', fontWeight: 700 }}>{store.ticketMoyen.toFixed(2)} {user?.currency || '$'}</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.5rem' }}>
-                  <span>Nombre de factures :</span>
+                  <span>{t('store.card.invoice_count')}</span>
                   <span style={{ fontWeight: 600, color: 'hsl(var(--foreground))' }}>{store.invoiceCount}</span>
                 </div>
 
@@ -344,11 +346,11 @@ export const Stores: React.FC = () => {
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
                     <ShoppingBag size={14} />
-                    Produits les plus achetés
+                    {t('store.card.top')}
                   </h3>
                   
                   {store.topProducts.length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))', fontStyle: 'italic' }}>Aucun article enregistré.</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))', fontStyle: 'italic' }}>{t('dash.recent.no_purchases')}</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {store.topProducts.map((p: any, idx: number) => (
@@ -360,7 +362,7 @@ export const Stores: React.FC = () => {
                             backgroundColor: 'hsl(var(--secondary))',
                             color: 'hsl(var(--muted))',
                             fontSize: '0.75rem'
-                          }}>qté: {p.quantity}</span>
+                          }}>{t('store.card.quantity')} {p.quantity}</span>
                         </div>
                       ))}
                     </div>
@@ -375,7 +377,7 @@ export const Stores: React.FC = () => {
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
-                <span>Afficher</span>
+                <span>{t('pag.show')}</span>
                 <select 
                   value={pageSize} 
                   onChange={(e) => {
@@ -390,7 +392,7 @@ export const Stores: React.FC = () => {
                   <option value={24}>24</option>
                   <option value={48}>48</option>
                 </select>
-                <span>magasins par page</span>
+                <span>{t('pag.lines_per_page')}</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -400,10 +402,10 @@ export const Stores: React.FC = () => {
                   onClick={() => setCurrentPage(currentPage - 1)}
                   style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
                 >
-                  Précédent
+                  {t('pag.prev')}
                 </button>
                 <span style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
-                  Page {currentPage} sur {totalPages || 1}
+                  {t('pag.page_of').replace('{current}', currentPage.toString()).replace('{total}', (totalPages || 1).toString())}
                 </span>
                 <button 
                   className="btn btn-ghost" 
@@ -411,7 +413,7 @@ export const Stores: React.FC = () => {
                   onClick={() => setCurrentPage(currentPage + 1)}
                   style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
                 >
-                  Suivant
+                  {t('pag.next')}
                 </button>
               </div>
             </div>
@@ -425,7 +427,7 @@ export const Stores: React.FC = () => {
           <div className="modal-content animate-scale-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
             <div className="modal-header">
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                {selectedStore ? 'Modifier le magasin' : 'Ajouter un nouveau magasin'}
+                {selectedStore ? t('store.modal.edit') : t('store.modal.add')}
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="btn btn-ghost" style={{ padding: '0.4rem', borderRadius: '50%', color: 'white' }}>
                 <X size={20} />
@@ -435,7 +437,7 @@ export const Stores: React.FC = () => {
             <form onSubmit={handleSubmitStore}>
               <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Nom du magasin *</label>
+                  <label>{t('store.modal.label.name')}</label>
                   <input
                     type="text"
                     className="form-control"
@@ -448,7 +450,7 @@ export const Stores: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Pays *</label>
+                    <label>{t('store.modal.label.country')}</label>
                     <Autocomplete
                       value={country}
                       onChange={handleCountryChange}
@@ -459,7 +461,7 @@ export const Stores: React.FC = () => {
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Province / État *</label>
+                    <label>{t('store.modal.label.province')}</label>
                     <Autocomplete
                       value={province}
                       onChange={handleProvinceChange}
@@ -472,7 +474,7 @@ export const Stores: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Ville *</label>
+                    <label>{t('store.modal.label.city')}</label>
                     <Autocomplete
                       value={city}
                       onChange={setCity}
@@ -483,21 +485,21 @@ export const Stores: React.FC = () => {
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Type de commerce</label>
+                    <label>{t('store.modal.type')}</label>
                     <select className="form-control" value={type} onChange={(e) => setType(e.target.value)}>
-                      <option value="SUPERMARKET">Supermarché / Alimentation</option>
-                      <option value="PHARMACY">Pharmacie</option>
-                      <option value="GAS_STATION">Station-service / Essence</option>
-                      <option value="TRANSPORT">Transport</option>
-                      <option value="RETAIL">Vente au détail</option>
-                      <option value="RESTAU">Restaurant / Café</option>
-                      <option value="OTHER">Autre</option>
+                      <option value="SUPERMARKET">{t('store.type.supermarket')}</option>
+                      <option value="PHARMACY">{t('store.type.pharmacy')}</option>
+                      <option value="GAS_STATION">{t('store.type.gas_station')}</option>
+                      <option value="TRANSPORT">{t('store.type.transport')}</option>
+                      <option value="RETAIL">{t('store.type.retail')}</option>
+                      <option value="RESTAU">{t('store.type.restau')}</option>
+                      <option value="OTHER">{t('store.type.other')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Adresse postale (facultatif)</label>
+                  <label>{t('store.modal.address')}</label>
                   <input
                     type="text"
                     className="form-control"
@@ -509,7 +511,7 @@ export const Stores: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Téléphone (facultatif)</label>
+                    <label>{t('store.modal.phone_opt')}</label>
                     <input
                       type="text"
                       className="form-control"
@@ -520,7 +522,7 @@ export const Stores: React.FC = () => {
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Site Web (facultatif)</label>
+                    <label>{t('store.modal.web_opt')}</label>
                     <input
                       type="url"
                       className="form-control"
@@ -534,10 +536,10 @@ export const Stores: React.FC = () => {
 
               <div className="modal-footer" style={{ padding: '1rem 1.5rem' }}>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
-                  Annuler
+                  {t('store.modal.btn.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={formLoading}>
-                  {formLoading ? 'Enregistrement...' : selectedStore ? 'Enregistrer les modifications' : 'Créer le magasin'}
+                  {formLoading ? t('store.modal.saving') : selectedStore ? t('store.modal.btn.update') : t('store.modal.btn.create')}
                 </button>
               </div>
             </form>

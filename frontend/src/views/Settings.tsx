@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
 import { api } from '../api';
 import { User, Lock, DollarSign, CreditCard, Save, CheckCircle, AlertCircle } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const { user, updateUserLocally } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
 
   // Profile Form States
@@ -40,9 +42,9 @@ export const Settings: React.FC = () => {
         currency,
         defaultPaymentMode,
       });
-      setProfileMessage({ type: 'success', text: 'Profil mis à jour avec succès !' });
+      setProfileMessage({ type: 'success', text: t('set.profile.success') });
     } catch (err: any) {
-      setProfileMessage({ type: 'error', text: err.message || 'Erreur lors de la mise à jour.' });
+      setProfileMessage({ type: 'error', text: err.message || t('set.profile.error') });
     } finally {
       setLoading(false);
     }
@@ -52,7 +54,7 @@ export const Settings: React.FC = () => {
     e.preventDefault();
     setSecurityMessage(null);
     if (newPassword !== confirmPassword) {
-      setSecurityMessage({ type: 'error', text: 'Les nouveaux mots de passe ne correspondent pas.' });
+      setSecurityMessage({ type: 'error', text: t('set.security.mismatch') });
       return;
     }
     setLoading(true);
@@ -61,12 +63,12 @@ export const Settings: React.FC = () => {
         currentPassword,
         newPassword,
       });
-      setSecurityMessage({ type: 'success', text: 'Mot de passe modifié avec succès !' });
+      setSecurityMessage({ type: 'success', text: t('set.security.success') });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setSecurityMessage({ type: 'error', text: err.message || 'Erreur lors de la mise à jour du mot de passe.' });
+      setSecurityMessage({ type: 'error', text: err.message || t('set.security.error') });
     } finally {
       setLoading(false);
     }
@@ -75,9 +77,9 @@ export const Settings: React.FC = () => {
   return (
     <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Paramètres</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('nav.settings')}</h1>
         <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>
-          Gérez vos informations de compte, vos préférences de devise et votre sécurité.
+          {t('set.subtitle')}
         </p>
       </div>
 
@@ -101,7 +103,7 @@ export const Settings: React.FC = () => {
           }}
         >
           <User size={16} style={{ marginRight: '0.5rem' }} />
-          Profil & Préférences
+          {t('set.tab.profile.title')}
         </button>
         <button
           onClick={() => setActiveTab('security')}
@@ -116,7 +118,7 @@ export const Settings: React.FC = () => {
           }}
         >
           <Lock size={16} style={{ marginRight: '0.5rem' }} />
-          Sécurité & Accès
+          {t('set.tab.security.title')}
         </button>
       </div>
 
@@ -124,7 +126,7 @@ export const Settings: React.FC = () => {
       {activeTab === 'profile' && (
         <form onSubmit={handleUpdateProfile} className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.75rem', marginBottom: '0.5rem' }}>
-            Informations personnelles & Devise
+            {t('set.profile.section.title')}
           </h2>
 
           {profileMessage && (
@@ -146,7 +148,7 @@ export const Settings: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
             <div className="form-group">
-              <label>Nom complet</label>
+              <label>{t('set.profile.label.name')}</label>
               <input
                 type="text"
                 className="form-control"
@@ -157,7 +159,7 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label>Adresse e-mail</label>
+              <label>{t('set.profile.label.email')}</label>
               <input
                 type="email"
                 className="form-control"
@@ -171,7 +173,7 @@ export const Settings: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
             <div className="form-group">
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <DollarSign size={15} /> Devise globale
+                <DollarSign size={15} /> {t('set.profile.label.currency')}
               </label>
               <select className="form-control" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                 <option value="$">Dollar ($)</option>
@@ -183,14 +185,14 @@ export const Settings: React.FC = () => {
 
             <div className="form-group">
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <CreditCard size={15} /> Mode de paiement par défaut
+                <CreditCard size={15} /> {t('set.profile.label.pay')}
               </label>
               <select className="form-control" value={defaultPaymentMode} onChange={(e) => setDefaultPaymentMode(e.target.value)}>
-                <option value="DEBIT_CARD">Carte Débit</option>
-                <option value="CREDIT_CARD">Carte Crédit</option>
-                <option value="CASH">Espèces</option>
-                <option value="WIRE_TRANSFER">Virement</option>
-                <option value="OTHER">Autre</option>
+                <option value="DEBIT_CARD">{t('set.pay.debit_card')}</option>
+                <option value="CREDIT_CARD">{t('set.pay.credit_card')}</option>
+                <option value="CASH">{t('set.pay.cash')}</option>
+                <option value="WIRE_TRANSFER">{t('set.pay.wire_transfer')}</option>
+                <option value="OTHER">{t('set.pay.other')}</option>
               </select>
             </div>
           </div>
@@ -198,7 +200,7 @@ export const Settings: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <Save size={16} />
-              {loading ? 'Enregistrement...' : 'Sauvegarder les modifications'}
+              {loading ? t('set.btn.saving') : t('set.profile.btn.save')}
             </button>
           </div>
         </form>
@@ -208,7 +210,7 @@ export const Settings: React.FC = () => {
       {activeTab === 'security' && (
         <form onSubmit={handleUpdateSecurity} className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.75rem', marginBottom: '0.5rem' }}>
-            Modifier le mot de passe
+            {t('set.security.title')}
           </h2>
 
           {securityMessage && (
@@ -229,7 +231,7 @@ export const Settings: React.FC = () => {
           )}
 
           <div className="form-group">
-            <label>Mot de passe actuel</label>
+            <label>{t('set.security.label.old')}</label>
             <input
               type="password"
               className="form-control"
@@ -242,7 +244,7 @@ export const Settings: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
             <div className="form-group">
-              <label>Nouveau mot de passe</label>
+              <label>{t('set.security.label.new')}</label>
               <input
                 type="password"
                 className="form-control"
@@ -255,7 +257,7 @@ export const Settings: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label>Confirmer le nouveau mot de passe</label>
+              <label>{t('set.security.label.confirm')}</label>
               <input
                 type="password"
                 className="form-control"
@@ -271,7 +273,7 @@ export const Settings: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <Lock size={16} />
-              {loading ? 'Modification...' : 'Modifier le mot de passe'}
+              {loading ? t('set.btn.modifying') : t('set.security.btn.save')}
             </button>
           </div>
         </form>

@@ -9,6 +9,7 @@ interface AutocompleteProps {
   required?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  inputStyle?: React.CSSProperties;
 }
 
 export const Autocomplete: React.FC<AutocompleteProps> = ({
@@ -19,6 +20,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   required = false,
   className,
   style,
+  inputStyle,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filtered, setFiltered] = useState<string[]>([]);
@@ -96,7 +98,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           required={required}
-          style={{ width: '100%', paddingRight: '2.5rem' }}
+          style={{ width: '100%', paddingRight: '2.5rem', ...inputStyle }}
         />
         <button
           type="button"

@@ -1,10 +1,12 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
+import { LanguageProvider, useLanguage } from './LanguageContext';
 import { Auth } from './views/Auth';
 import { MainLayout } from './components/MainLayout';
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
 
   if (loading) {
     return (
@@ -18,7 +20,7 @@ const AppContent: React.FC = () => {
         fontSize: '1.25rem',
         fontWeight: 600
       }}>
-        Initialisation de FinTrack...
+        {t('app.init')}
       </div>
     );
   }
@@ -29,7 +31,9 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </AuthProvider>
   );
 }

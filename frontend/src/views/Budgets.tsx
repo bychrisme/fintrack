@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
-import { DollarSign, Trash, AlertTriangle, Lightbulb, ClipboardList } from 'lucide-react';
+import { useLanguage } from '../LanguageContext';
+import { DollarSign, Trash, AlertTriangle, Lightbulb, ClipboardList, Edit2 } from 'lucide-react';
 
 export const Budgets: React.FC = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   
   // States
   const [budgetReports, setBudgetReports] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [consumption, setConsumption] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedBudget, setSelectedBudget] = useState<any>(null);
 
   // Form state
   const [amount, setAmount] = useState('');
@@ -50,31 +53,55 @@ export const Budgets: React.FC = () => {
     fetchBudgetReports();
   }, [month, year]);
 
-  const handleCreateBudget = async (e: React.FormEvent) => {
+  const handleSubmitBudget = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount) return;
 
     try {
-      await api.budgets.create({
-        amount: parseFloat(amount),
-        month,
-        year,
-        categoryId: categoryId || undefined,
-      });
+      if (selectedBudget) {
+        // Edit mode
+        await api.budgets.update(selectedBudget.id, {
+          amount: parseFloat(amount),
+          month,
+          year,
+          categoryId: categoryId || null,
+        });
+        setSelectedBudget(null);
+      } else {
+        // Create mode
+        await api.budgets.create({
+          amount: parseFloat(amount),
+          month,
+          year,
+          categoryId: categoryId || undefined,
+        });
+      }
       setAmount('');
       fetchBudgetReports();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la création du budget');
+      alert(err.message || t('bud.error.save'));
     }
   };
 
+  const handleEditBudget = (report: any) => {
+    setSelectedBudget(report);
+    setAmount(report.amount.toString());
+    setCategoryId(report.category ? report.category.id : '');
+  };
+
+  const handleCancelEdit = () => {
+    setSelectedBudget(null);
+    setAmount('');
+    setCategoryId(categories.length > 0 ? categories[0].id : '');
+  };
+
   const handleDeleteBudget = async (id: string) => {
-    if (!window.confirm('Voulez-vous supprimer ce budget ?')) return;
+    if (!window.confirm(t('bud.delete.confirm'))) return;
     try {
       await api.budgets.delete(id);
       fetchBudgetReports();
     } catch (err) {
-      alert('Erreur lors de la suppression');
+      alert(t('bud.error.delete'));
     }
   };
 
@@ -95,7 +122,7 @@ export const Budgets: React.FC = () => {
         const daysAgo = Math.floor(diffMs / (24 * 60 * 60 * 1000));
         list.push({
           name: p.name,
-          reason: `Achat suggéré (Dernier achat il y a ${daysAgo} jours. Habituellement acheté tous les 7 jours)`,
+          reason: t('bud.shopping.reason').replace('{days}', daysAgo.toString()),
           unit: p.unit,
         });
       }
@@ -110,8 +137,8 @@ export const Budgets: React.FC = () => {
     <div className="animate-fade-in">
       <div className="flex-header">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Enveloppes Budgétaires</h1>
-          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Définissez des limites de dépenses par catégorie et suivez leur respect.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('bud.title')}</h1>
+          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>{t('bud.subtitle')}</p>
         </div>
       </div>
 
@@ -120,14 +147,14 @@ export const Budgets: React.FC = () => {
         {/* Budgets Tracker */}
         <div className="stat-card" style={{ gridColumn: 'span 2' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Suivi des Budgets</h2>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t('bud.tracker.title')}</h2>
             
             {/* Period Selector */}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <select className="form-control" style={{ padding: '0.4rem 0.75rem' }} value={month} onChange={(e) => setMonth(parseInt(e.target.value))}>
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i + 1} value={i + 1}>
-                    {new Date(0, i).toLocaleString('fr', { month: 'long' })}
+                    {new Date(0, i).toLocaleString(language, { month: 'long' })}
                   </option>
                 ))}
               </select>
@@ -139,16 +166,16 @@ export const Budgets: React.FC = () => {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'hsl(var(--muted))' }}>Mise à jour...</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'hsl(var(--muted))' }}>{t('bud.tracker.loading')}</div>
           ) : budgetReports.length === 0 ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))', fontStyle: 'italic' }}>
-              Aucun budget défini pour cette période. Utilisez le formulaire ci-contre pour en ajouter.
+              {t('bud.tracker.no_budgets')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {budgetReports.map((report) => {
                 const color = report.category ? report.category.color : 'hsl(var(--primary))';
-                const catName = report.category ? report.category.name : 'Budget Global';
+                const catName = report.category ? report.category.name : t('bud.form.cat.global');
                 const percent = Math.min(report.percentage, 100);
                 
                 return (
@@ -163,15 +190,26 @@ export const Budgets: React.FC = () => {
                         <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: color }}></span>
                         <span style={{ fontWeight: 600 }}>{catName}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ fontSize: '0.85rem', color: report.isExceeded ? 'hsl(var(--destructive))' : 'hsl(var(--muted))' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem', color: report.isExceeded ? 'hsl(var(--destructive))' : 'hsl(var(--muted))', marginRight: '0.5rem' }}>
                           {report.spent.toFixed(2)} {user?.currency || '$'} / {report.amount.toFixed(2)} {user?.currency || '$'}
                         </span>
-                        {user?.role === 'ADMIN' && (
-                          <button onClick={() => handleDeleteBudget(report.id)} className="btn btn-ghost" style={{ padding: '0.2rem', color: 'hsl(var(--destructive))' }}>
-                            <Trash size={14} />
-                          </button>
-                        )}
+                        <button 
+                          onClick={() => handleEditBudget(report)} 
+                          className="btn btn-ghost" 
+                          style={{ padding: '0.25rem', color: 'hsl(var(--primary))' }}
+                          title={t('bud.edit_btn')}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteBudget(report.id)} 
+                          className="btn btn-ghost" 
+                          style={{ padding: '0.25rem', color: 'hsl(var(--destructive))' }}
+                          title={t('bud.delete_btn')}
+                        >
+                          <Trash size={14} />
+                        </button>
                       </div>
                     </div>
 
@@ -187,11 +225,11 @@ export const Budgets: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                      <span style={{ color: 'hsl(var(--muted))' }}>{report.percentage.toFixed(0)}% utilisé</span>
+                      <span style={{ color: 'hsl(var(--muted))' }}>{report.percentage.toFixed(0)}% {t('bud.tracker.used')}</span>
                       {report.isExceeded && (
                         <span style={{ color: 'hsl(var(--destructive))', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
                           <AlertTriangle size={12} />
-                          Dépassement de {(report.spent - report.amount).toFixed(2)} {user?.currency || '$'}
+                          {t('bud.tracker.exceeded')} {(report.spent - report.amount).toFixed(2)} {user?.currency || '$'}
                         </span>
                       )}
                     </div>
@@ -206,11 +244,11 @@ export const Budgets: React.FC = () => {
         <div className="stat-card">
           <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <DollarSign size={18} />
-            Définir une limite
+            {selectedBudget ? t('bud.form.title.edit') : t('bud.form.title.add')}
           </h2>
-          <form onSubmit={handleCreateBudget}>
+          <form onSubmit={handleSubmitBudget}>
             <div className="form-group">
-              <label>Montant du budget ({user?.currency || '$'})</label>
+              <label>{t('bud.form.label.amount')} ({user?.currency || '$'})</label>
               <input
                 type="number"
                 step="0.01"
@@ -223,16 +261,23 @@ export const Budgets: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label>Catégorie</label>
+              <label>{t('bud.form.label.cat')}</label>
               <select className="form-control" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">Budget Global (Toutes dépenses)</option>
+                <option value="">{t('bud.form.cat.global')}</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.75rem' }}>
-              Enregistrer le budget
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              {selectedBudget && (
+                <button type="button" onClick={handleCancelEdit} className="btn btn-secondary" style={{ flex: 1 }}>
+                  {t('bud.form.btn.cancel')}
+                </button>
+              )}
+              <button type="submit" className="btn btn-primary" style={{ flex: selectedBudget ? 2 : 1 }}>
+                {selectedBudget ? t('bud.form.btn.update') : t('bud.form.btn.save')}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -240,10 +285,10 @@ export const Budgets: React.FC = () => {
         <div className="stat-card" style={{ gridColumn: 'span 3' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <ClipboardList size={20} style={{ color: 'hsl(var(--primary))' }} />
-            Liste d'Achats Intelligente
+            {t('bud.shopping.title')}
           </h2>
           <p style={{ color: 'hsl(var(--muted))', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Le système suggère automatiquement des articles à votre liste selon vos fréquences et cycles d'achat habituels.
+            {t('bud.shopping.desc')}
           </p>
 
           {shoppingList.length === 0 ? (
@@ -261,7 +306,7 @@ export const Budgets: React.FC = () => {
               gap: '0.5rem'
             }}>
               <Lightbulb size={24} style={{ color: 'hsl(var(--warning))' }} />
-              Votre garde-manger semble complet ! Aucune suggestion automatique requise pour aujourd'hui.
+              {t('bud.shopping.success')}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>

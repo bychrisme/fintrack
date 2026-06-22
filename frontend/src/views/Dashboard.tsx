@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
 import { PiggyBank, ShoppingBag, RefreshCw, Plus } from 'lucide-react';
 
 export const Dashboard: React.FC<{ 
   navigateToInvoices: (subView: 'list' | 'add') => void;
 }> = ({ navigateToInvoices }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,7 +35,7 @@ export const Dashboard: React.FC<{
   };
 
   if (loading) {
-    return <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Chargement du tableau de bord...</div>;
+    return <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>{t('dash.loading')}</div>;
   }
 
   const kpis = stats?.kpis || {
@@ -73,8 +75,8 @@ export const Dashboard: React.FC<{
     <div className="animate-fade-in">
       <div className="flex-header">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Bonjour, {user?.name || 'Utilisateur'}</h1>
-          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Voici l'état actuel de vos dépenses et analyses financières.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('dash.welcome')}, {user?.name || t('role.user')}</h1>
+          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>{t('dash.welcome.desc')}</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <button
@@ -83,7 +85,7 @@ export const Dashboard: React.FC<{
             style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
           >
             <RefreshCw size={16} />
-            Actualiser
+            {t('dash.btn.refresh')}
           </button>
           <button
             onClick={() => navigateToInvoices('add')}
@@ -91,44 +93,44 @@ export const Dashboard: React.FC<{
             style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}
           >
             <Plus size={16} />
-            Nouvelle facture
+            {t('dash.btn.newInvoice')}
           </button>
         </div>
       </div>
 
       {/* Total Expenses Section */}
       <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'hsl(var(--muted))', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        Aperçu des dépenses
+        {t('dash.overview')}
       </h3>
       <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '1.5rem', gap: '1rem' }}>
         <div className="stat-card">
-          <div className="stat-title">Aujourd'hui</div>
+          <div className="stat-title">{t('dash.kpi.today')}</div>
           <div className="stat-value" style={{ fontSize: '1.5rem' }}>{(kpis.totalSpentToday || 0).toFixed(2)} {user?.currency || '$'}</div>
-          <div className="stat-footer">Dépenses du jour</div>
+          <div className="stat-footer">{t('dash.kpi.today.footer')}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">Cette Semaine</div>
+          <div className="stat-title">{t('dash.kpi.week')}</div>
           <div className="stat-value" style={{ fontSize: '1.5rem' }}>{(kpis.totalSpentThisWeek || 0).toFixed(2)} {user?.currency || '$'}</div>
-          <div className="stat-footer">Dépenses de la semaine</div>
+          <div className="stat-footer">{t('dash.kpi.week.footer')}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">Ce Mois-ci</div>
+          <div className="stat-title">{t('dash.kpi.month')}</div>
           <div className="stat-value" style={{ fontSize: '1.5rem', color: 'hsl(var(--primary))' }}>{kpis.totalSpentThisMonth.toFixed(2)} {user?.currency || '$'}</div>
-          <div className="stat-footer">{kpis.monthlyInvoiceCount} factures mensuelles</div>
+          <div className="stat-footer">{kpis.monthlyInvoiceCount} {t('dash.kpi.month.footer')}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">Cette Année</div>
+          <div className="stat-title">{t('dash.kpi.year')}</div>
           <div className="stat-value" style={{ fontSize: '1.5rem' }}>{kpis.totalSpentThisYear.toFixed(2)} {user?.currency || '$'}</div>
-          <div className="stat-footer">Cumul annuel</div>
+          <div className="stat-footer">{t('dash.kpi.year.footer')}</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-title">Total Cumulé</div>
+          <div className="stat-title">{t('dash.kpi.cumulative')}</div>
           <div className="stat-value" style={{ fontSize: '1.5rem', color: 'hsl(var(--success))' }}>{kpis.totalSpentAllTime.toFixed(2)} {user?.currency || '$'}</div>
-          <div className="stat-footer">Total historique</div>
+          <div className="stat-footer">{t('dash.kpi.cumulative.footer')}</div>
         </div>
       </div>
 
@@ -137,7 +139,7 @@ export const Dashboard: React.FC<{
         <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div className="stat-title">Articles Achetés</div>
+              <div className="stat-title">{t('dash.items.title')}</div>
               <div className="stat-value">{kpis.totalItemsCount}</div>
             </div>
             <div style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'hsl(var(--warning) / 0.1)', color: 'hsl(var(--warning))' }}>
@@ -145,7 +147,7 @@ export const Dashboard: React.FC<{
             </div>
           </div>
           <div className="stat-footer" style={{ marginTop: '0.5rem' }}>
-            {kpis.invoiceCount} factures au total dans FinTrack
+            {kpis.invoiceCount} {t('dash.items.footer')}
           </div>
         </div>
 
@@ -159,7 +161,7 @@ export const Dashboard: React.FC<{
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div className="stat-title" style={{ color: 'hsl(var(--primary-foreground))', fontWeight: 600 }}>Indice d'Économie</div>
+              <div className="stat-title" style={{ color: 'hsl(var(--primary-foreground))', fontWeight: 600 }}>{t('dash.savings.title')}</div>
               <div className="stat-value" style={{ color: '#38bdf8' }}>{kpis.savingsIndex.toFixed(2)} {user?.currency || '$'}</div>
             </div>
             <div style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
@@ -167,7 +169,7 @@ export const Dashboard: React.FC<{
             </div>
           </div>
           <div className="stat-footer" style={{ color: 'hsl(var(--foreground) / 0.7)', marginTop: '0.5rem' }}>
-            Économie potentielle cumulée cette année en achetant au prix minimum constaté !
+            {t('dash.savings.footer')}
           </div>
         </div>
       </div>
@@ -177,11 +179,11 @@ export const Dashboard: React.FC<{
         
         {/* Category breakdown (SVG Donut) */}
         <div className="stat-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Répartition par Catégorie</h2>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>{t('dash.category.breakdown')}</h2>
           
           {categoryData.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--muted))' }}>
-              Aucune donnée à afficher.
+              {t('dash.no_data')}
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flex: 1 }}>
@@ -213,7 +215,7 @@ export const Dashboard: React.FC<{
                   textAlign: 'center'
                 }}>
                   <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{totalCategoryAmt.toFixed(0)} {user?.currency || '$'}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'hsl(var(--muted))' }}>Total</div>
+                  <div style={{ fontSize: '0.7rem', color: 'hsl(var(--muted))' }}>{t('dash.total')}</div>
                 </div>
               </div>
 
@@ -237,9 +239,9 @@ export const Dashboard: React.FC<{
 
         {/* Store breakdown */}
         <div className="stat-card">
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Dépenses par Magasin</h2>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>{t('dash.store.breakdown')}</h2>
           {storeData.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Aucune donnée.</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>{t('dash.no_data')}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               {storeData.map((store: any, idx: number) => (
@@ -267,20 +269,20 @@ export const Dashboard: React.FC<{
       {/* Recent Invoices Table */}
       <div className="table-container">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid hsl(var(--card-border))' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Derniers Achats</h2>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t('dash.recent.purchases')}</h2>
           <button onClick={() => navigateToInvoices('list')} className="btn btn-ghost" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
-            Voir tout
+            {t('dash.view.all')}
           </button>
         </div>
         {recentInvoices.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Aucune facture récente.</div>
+          <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>{t('dash.recent.no_invoices')}</div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Numéro</th>
-                <th>Magasin</th>
+                <th>{t('inv.table.number')}</th>
+                <th>{t('inv.table.store')}</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
               </tr>
             </thead>

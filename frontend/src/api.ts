@@ -94,6 +94,7 @@ export const api = {
     findAll: () => request('/budgets'),
     getReports: (month: number, year: number) => request(`/budgets/reports?month=${month}&year=${year}`),
     create: (body: any) => request('/budgets', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id: string, body: any) => request(`/budgets/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
     delete: (id: string) => request(`/budgets/${id}`, { method: 'DELETE' }),
   },
 

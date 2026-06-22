@@ -4,9 +4,11 @@ import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { Autocomplete } from '../components/Autocomplete';
 import { Search, Plus, FileSpreadsheet, Printer, Trash, Upload, Sparkles, ArrowLeft, Calendar, Store, CreditCard, MessageSquare, Tag, Edit, Loader2 } from 'lucide-react';
+import { useLanguage } from '../LanguageContext';
 
 export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = ({ initialView }) => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   
   // Tabbed sub-view state: 'list' | 'add' | 'detail'
   const [view, setView] = useState<'list' | 'add' | 'detail'>(initialView || 'list');
@@ -181,7 +183,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       await fetchMetadata(createdStore.id);
       setIsStoreModalOpen(false);
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la création du magasin');
+      alert(err.message || t('store.error.save'));
     } finally {
       setStoreFormLoading(false);
     }
@@ -221,7 +223,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      alert('Erreur lors de l\'exportation CSV');
+      alert(language === 'fr' ? 'Erreur lors de l\'exportation CSV' : 'Error exporting CSV');
     }
   };
 
@@ -261,7 +263,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       }));
       setItems(mappedItems);
     } catch (err: any) {
-      alert(err.message || 'La lecture du reçu a échoué');
+      alert(err.message || t('inv.ocr.error.process'));
     } finally {
       setOcrLoading(false);
       setLoading(false);
@@ -278,7 +280,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       await handleOCR(base64);
     };
     reader.onerror = () => {
-      alert('Erreur lors de la lecture du fichier');
+      alert(language === 'fr' ? 'Erreur lors de la lecture du fichier' : 'Error reading file');
     };
     reader.readAsDataURL(file);
   };
@@ -358,7 +360,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formStoreId) {
-      alert('Veuillez sélectionner un magasin');
+      alert(t('inv.form.select.store'));
       return;
     }
 
@@ -405,7 +407,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       setView('list');
       fetchUniqueProducts();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de l\'enregistrement de la facture');
+      alert(err.message || t('inv.form.error.save'));
     }
   };
 
@@ -422,13 +424,13 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
   };
 
   const handleDeleteInvoice = async (id: string) => {
-    if (!window.confirm('Voulez-vous supprimer cette facture et tous ses articles ?')) return;
+    if (!window.confirm(t('inv.confirm.delete_one'))) return;
     try {
       await api.invoices.delete(id);
       setView('list');
       fetchInvoices();
     } catch (err) {
-      alert('Erreur lors de la suppression');
+      alert(t('inv.error.delete'));
     }
   };
 
@@ -459,13 +461,13 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Voulez-vous supprimer les ${selectedIds.length} factures sélectionnées ?`)) return;
+    if (!window.confirm(t('inv.confirm.delete_selected'))) return;
     try {
       await api.invoices.bulkDelete(selectedIds);
       setSelectedIds([]);
       fetchInvoices();
     } catch (err) {
-      alert('Erreur lors de la suppression groupée');
+      alert(t('inv.error.delete'));
     }
   };
 
@@ -504,14 +506,14 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
       <div className="animate-fade-in">
         <div className="flex-header">
           <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Factures & Achats</h1>
-            <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Consultez, filtrez et importez vos factures d'achat.</p>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('inv.title')}</h1>
+            <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>{t('inv.subtitle')}</p>
           </div>
           <div className="flex-header-actions">
             {selectedIds.length > 0 && (
               <button onClick={handleBulkDelete} className="btn btn-danger">
                 <Trash size={16} />
-                Supprimer ({selectedIds.length})
+                {t('inv.btn.delete_selected')} ({selectedIds.length})
               </button>
             )}
             <button onClick={handleExportCSV} className="btn btn-secondary">
@@ -520,11 +522,11 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
             </button>
             <button onClick={() => window.print()} className="btn btn-secondary">
               <Printer size={16} />
-              Imprimer PDF
+              {language === 'fr' ? 'Imprimer PDF' : 'Print PDF'}
             </button>
             <button onClick={openAddPage} className="btn btn-primary">
               <Plus size={16} />
-              Ajouter une facture
+              {t('inv.btn.add')}
             </button>
           </div>
         </div>
@@ -544,7 +546,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
             <Search size={18} style={{ color: 'hsl(var(--muted))' }} />
             <input
               type="text"
-              placeholder="Rechercher produit, facture, commentaire..."
+              placeholder={t('inv.filter.search')}
               className="form-control"
               style={{ width: '100%', border: 'none', background: 'transparent', padding: '0.2rem' }}
               value={search}
@@ -554,22 +556,22 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
             <select className="form-control" style={{ padding: '0.5rem 0.75rem' }} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-              <option value="">Tous les Magasins</option>
+              <option value="">{t('inv.filter.store')}</option>
               {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
 
             <select className="form-control" style={{ padding: '0.5rem 0.75rem' }} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Toutes les Catégories</option>
+              <option value="">{t('prod.filter.cat')}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
 
             <select className="form-control" style={{ padding: '0.5rem 0.75rem' }} value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
-              <option value="">Modes de paiement</option>
-              <option value="CASH">Espèces</option>
-              <option value="DEBIT_CARD">Carte Débit</option>
-              <option value="CREDIT_CARD">Carte Crédit</option>
-              <option value="WIRE_TRANSFER">Virement</option>
-              <option value="OTHER">Autre</option>
+              <option value="">{t('inv.form.select.pay_placeholder')}</option>
+              <option value="CASH">{t('set.pay.cash')}</option>
+              <option value="DEBIT_CARD">{t('set.pay.debit_card')}</option>
+              <option value="CREDIT_CARD">{t('set.pay.credit_card')}</option>
+              <option value="WIRE_TRANSFER">{t('set.pay.wire_transfer')}</option>
+              <option value="OTHER">{t('set.pay.other')}</option>
             </select>
 
             <input
@@ -579,7 +581,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
-            <span style={{ color: 'hsl(var(--muted))', fontSize: '0.85rem' }}>à</span>
+            <span style={{ color: 'hsl(var(--muted))', fontSize: '0.85rem' }}>{language === 'fr' ? 'à' : 'to'}</span>
             <input
               type="date"
               className="form-control"
@@ -592,10 +594,10 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
         {/* Invoices Grid/Table */}
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>Mise à jour de la liste...</div>
+          <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>{language === 'fr' ? 'Mise à jour de la liste...' : 'Updating list...'}</div>
         ) : invoices.length === 0 ? (
           <div style={{ padding: '4rem', textAlign: 'center', backgroundColor: 'hsl(var(--card))', borderRadius: 'var(--radius-lg)', border: '1px solid hsl(var(--card-border))', color: 'hsl(var(--muted))' }}>
-            Aucune facture ne correspond à ces critères.
+            {t('inv.table.no_invoices')}
           </div>
         ) : (
           <div className="table-container animate-fade-in">
@@ -610,13 +612,13 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
                     />
                   </th>
-                  <th>Date</th>
-                  <th>Numéro</th>
-                  <th>Magasin</th>
-                  <th>Mode</th>
+                  <th>{t('inv.table.date')}</th>
+                  <th>{t('inv.table.number')}</th>
+                  <th>{t('inv.table.store')}</th>
+                  <th>{t('inv.table.pay')}</th>
                   <th>Taxes</th>
                   <th>Total</th>
-                  {user?.role === 'ADMIN' && <th style={{ textAlign: 'right' }}>Actions</th>}
+                  {user?.role === 'ADMIN' && <th style={{ textAlign: 'right' }}>{t('inv.table.actions')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -630,7 +632,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                         style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
                       />
                     </td>
-                    <td>{new Date(inv.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</td>
+                    <td>{new Date(inv.date).toLocaleDateString(language, { timeZone: 'UTC' })}</td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 500 }}>{inv.invoiceNumber}</td>
                     <td>{inv.store.name}</td>
                     <td>
@@ -640,7 +642,13 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                         fontSize: '0.75rem',
                         backgroundColor: 'hsl(var(--secondary))',
                         color: 'hsl(var(--muted))'
-                      }}>{inv.paymentMode}</span>
+                      }}>
+                        {inv.paymentMode === 'CASH' && t('set.pay.cash')}
+                        {inv.paymentMode === 'DEBIT_CARD' && t('set.pay.debit_card')}
+                        {inv.paymentMode === 'CREDIT_CARD' && t('set.pay.credit_card')}
+                        {inv.paymentMode === 'WIRE_TRANSFER' && t('set.pay.wire_transfer')}
+                        {inv.paymentMode === 'OTHER' && t('set.pay.other')}
+                      </span>
                     </td>
                     <td>{inv.totalTaxes.toFixed(2)} {user?.currency || '$'}</td>
                     <td style={{ fontWeight: 600 }}>{inv.totalAmount.toFixed(2)} {user?.currency || '$'}</td>
@@ -668,7 +676,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               gap: '1rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
-                <span>Afficher</span>
+                <span>{t('pag.show')}</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
@@ -684,11 +692,14 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                 </select>
-                <span>lignes par page</span>
+                <span>{t('pag.lines_per_page')}</span>
               </div>
               
               <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
-                Affichage de {invoices.length > 0 ? startIndex + 1 : 0} à {Math.min(endIndex, invoices.length)} sur {invoices.length} factures
+                {t('pag.display_invoices')
+                  .replace('{start}', String(invoices.length > 0 ? startIndex + 1 : 0))
+                  .replace('{end}', String(Math.min(endIndex, invoices.length)))
+                  .replace('{total}', String(invoices.length))}
               </div>
 
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -699,10 +710,12 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   className="btn btn-secondary"
                   style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
                 >
-                  Précédent
+                  {t('pag.prev')}
                 </button>
                 <span style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '0 0.5rem' }}>
-                  Page {currentPage} sur {totalPages || 1}
+                  {t('pag.page_of')
+                    .replace('{current}', String(currentPage))
+                    .replace('{total}', String(totalPages || 1))}
                 </span>
                 <button
                   type="button"
@@ -711,7 +724,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   className="btn btn-secondary"
                   style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
                 >
-                  Suivant
+                  {t('pag.next')}
                 </button>
               </div>
             </div>
@@ -733,9 +746,11 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
             <ArrowLeft size={16} />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{editingInvoice ? 'Modifier la Facture' : 'Nouvelle Facture d\'Achat'}</h1>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{editingInvoice ? t('inv.form.edit') : t('inv.form.add')}</h1>
             <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>
-              {editingInvoice ? 'Modifiez les détails et les articles de cette facture d\'achat.' : 'Saisissez manuellement vos dépenses ou utilisez l\'assistant OCR.'}
+              {editingInvoice 
+                ? (language === 'fr' ? 'Modifiez les détails et les articles de cette facture d\'achat.' : 'Edit details and products for this purchase invoice.') 
+                : (language === 'fr' ? 'Saisissez manuellement vos dépenses ou utilisez l\'assistant OCR.' : 'Manually enter your expenses or use the OCR assistant.')}
             </p>
           </div>
         </div>
@@ -768,7 +783,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                 </div>
                 <div>
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {ocrLoading ? 'Analyse du reçu par OCR...' : 'Remplissage magique par reçu photo (OCR)'}
+                    {ocrLoading ? (language === 'fr' ? 'Analyse du reçu par OCR...' : 'OCR receipt analysis...') : t('inv.ocr.title')}
                     <span style={{
                       fontSize: '0.65rem',
                       fontWeight: 700,
@@ -783,8 +798,8 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   </h3>
                   <p style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', marginTop: '0.25rem' }}>
                     {ocrLoading 
-                      ? 'Extraction des articles, taxes, magasin et date du reçu en cours...' 
-                      : 'Téléversez une photo de votre reçu pour pré-remplir instantanément la facture. Note : cette fonctionnalité est encore en version beta.'}
+                      ? (language === 'fr' ? 'Extraction des articles, taxes, magasin et date du reçu en cours...' : 'Extracting items, taxes, store, and date from the receipt...') 
+                      : `${t('inv.ocr.desc')} ${t('inv.ocr.beta')}`}
                   </p>
                 </div>
               </div>
@@ -805,12 +820,12 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   {ocrLoading ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Analyse en cours...
+                      {language === 'fr' ? 'Analyse en cours...' : 'Analyzing...'}
                     </>
                   ) : (
                     <>
                       <Upload size={14} />
-                      Importer un reçu
+                      {language === 'fr' ? 'Importer un reçu' : 'Import a receipt'}
                     </>
                   )}
                   <input
@@ -828,11 +843,11 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
           {/* Section 1: Informations Générales */}
           <div className="stat-card">
             <h2 style={{ fontSize: '1.1rem', fontWeight: 600, borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
-              Détails de l'achat
+              {language === 'fr' ? "Détails de l'achat" : 'Purchase Details'}
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Numéro de facture *</label>
+                <label>{t('inv.form.label.number')}</label>
                 <input
                   type="text"
                   className="form-control"
@@ -844,7 +859,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Date d'achat *</label>
+                <label>{t('inv.form.label.date')}</label>
                 <input
                   type="date"
                   className="form-control"
@@ -856,7 +871,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.1rem' }}>
-                  <label style={{ margin: 0 }}>Magasin *</label>
+                  <label style={{ margin: 0 }}>{t('inv.form.label.store')}</label>
                   <button
                     type="button"
                     onClick={handleOpenStoreModal}
@@ -884,7 +899,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                     }}
                   >
                     <Plus size={12} />
-                    Nouveau ?
+                    {language === 'fr' ? 'Nouveau ?' : 'New?'}
                   </button>
                 </div>
                 <select 
@@ -901,26 +916,26 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   required 
                 >
                   {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  <option value="" disabled>-- Sélectionner --</option>
+                  <option value="" disabled>{language === 'fr' ? '-- Sélectionner --' : '-- Select --'}</option>
                   <option value="__NEW_STORE__" style={{ color: 'hsl(var(--primary))', fontWeight: 600 }}>
-                    ➕ + Créer un nouveau magasin...
+                    ➕ {t('inv.form.btn.newStore')}...
                   </option>
                 </select>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Mode de paiement *</label>
+                <label>{t('inv.form.label.pay')}</label>
                 <select className="form-control" value={formPaymentMode} onChange={(e) => setFormPaymentMode(e.target.value)} required>
-                  <option value="DEBIT_CARD">Carte Débit</option>
-                  <option value="CREDIT_CARD">Carte Crédit</option>
-                  <option value="CASH">Espèces</option>
-                  <option value="WIRE_TRANSFER">Virement</option>
-                  <option value="OTHER">Autre</option>
+                  <option value="DEBIT_CARD">{t('set.pay.debit_card')}</option>
+                  <option value="CREDIT_CARD">{t('set.pay.credit_card')}</option>
+                  <option value="CASH">{t('set.pay.cash')}</option>
+                  <option value="WIRE_TRANSFER">{t('set.pay.wire_transfer')}</option>
+                  <option value="OTHER">{t('set.pay.other')}</option>
                 </select>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Rabais global / Fidélité</label>
+                <label>{language === 'fr' ? 'Rabais global / Fidélité' : 'Global Discount / Loyalty'}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -933,10 +948,10 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Commentaires / Notes (facultatif)</label>
+              <label>{t('inv.form.label.comment')} ({language === 'fr' ? 'facultatif' : 'optional'})</label>
               <textarea
                 className="form-control"
-                placeholder="Notes de la facture..."
+                placeholder={language === 'fr' ? "Notes de la facture..." : "Invoice notes..."}
                 rows={2}
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
@@ -947,14 +962,14 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
           {/* Section 2: Articles Achetés */}
           <div className="stat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Articles achetés</h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t('inv.form.items')}</h2>
               <button type="button" onClick={addItemRow} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
-                + Ajouter une ligne
+                {t('inv.form.btn.addline')}
               </button>
             </div>
 
             <div style={{ overflowX: 'auto', width: '100%', marginBottom: '1.5rem' }}>
-              <div style={{ minWidth: '1150px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ minWidth: '1150px', display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: '280px', paddingBottom: '20px' }}>
                 {/* Header aligned with row inputs */}
                 <div style={{
                   display: 'grid',
@@ -967,14 +982,14 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                   borderBottom: '1px solid hsl(var(--card-border))',
                   marginBottom: '0.25rem'
                 }}>
-                  <div>Nom de l'article *</div>
-                  <div>Catégorie *</div>
-                  <div>Quantité *</div>
-                  <div>Unité</div>
-                  <div>Prix unitaire *</div>
-                  <div>Total (HT)</div>
-                  <div>Taxe %</div>
-                  <div>Rabais ({user?.currency || '$'})</div>
+                  <div>{t('inv.form.col.name')}</div>
+                  <div>{t('inv.form.col.cat')}</div>
+                  <div>{t('inv.form.col.qty')}</div>
+                  <div>{t('inv.form.col.unit')}</div>
+                  <div>{t('inv.form.col.price')}</div>
+                  <div>{t('inv.form.col.totalht')}</div>
+                  <div>{t('inv.form.col.tax')}</div>
+                  <div>{t('inv.form.col.discount')} ({user?.currency || '$'})</div>
                   <div></div>
                 </div>
 
@@ -983,17 +998,13 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                     display: 'grid',
                     gridTemplateColumns: '2.2fr 1.3fr 0.8fr 1fr 1.1fr 1.1fr 0.8fr 0.8fr 40px',
                     gap: '0.5rem',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    position: 'relative',
+                    zIndex: items.length - idx
                   }}>
-                    <input
-                      type="text"
-                      list="products-datalist"
-                      className="form-control"
-                      placeholder="Nom du produit"
-                      style={{ padding: '0.5rem 0.4rem', width: '100%' }}
+                    <Autocomplete
                       value={item.productName}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         updateItemField(idx, 'productName', val);
                         const matching = uniqueProducts.find(
                           p => p.productName.toLowerCase() === val.toLowerCase()
@@ -1002,7 +1013,10 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                           updateItemField(idx, 'categoryId', matching.categoryId);
                         }
                       }}
+                      suggestions={uniqueProducts.map((p: any) => p.productName)}
+                      placeholder={t('inv.form.autocomplete.product')}
                       required
+                      inputStyle={{ padding: '0.5rem 0.4rem' }}
                     />
 
                     <select
@@ -1012,7 +1026,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       onChange={(e) => updateItemField(idx, 'categoryId', e.target.value)}
                       required
                     >
-                      <option value="">Catégorie</option>
+                      <option value="">{t('inv.form.select.cat')}</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
 
@@ -1020,7 +1034,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       type="number"
                       step="any"
                       className="form-control"
-                      placeholder="Qté"
+                      placeholder={language === 'fr' ? 'Qté' : 'Qty'}
                       style={{ padding: '0.5rem 0.4rem', width: '100%' }}
                       value={item.quantity}
                       onChange={(e) => updateItemField(idx, 'quantity', e.target.value)}
@@ -1033,22 +1047,22 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       value={item.unit}
                       onChange={(e) => updateItemField(idx, 'unit', e.target.value)}
                     >
-                      <option value="UNIT">unité</option>
+                      <option value="UNIT">{language === 'fr' ? 'unité' : 'unit'}</option>
                       <option value="KG">kg</option>
-                      <option value="LBS">lbs (livre)</option>
+                      <option value="LBS">{language === 'fr' ? 'lbs (livre)' : 'lbs (pound)'}</option>
                       <option value="LABS">labs</option>
                       <option value="G">g</option>
                       <option value="LITRE">litre</option>
                       <option value="ML">ml</option>
-                      <option value="PACK">paquet</option>
-                      <option value="BOX">boîte</option>
+                      <option value="PACK">{language === 'fr' ? 'paquet' : 'pack'}</option>
+                      <option value="BOX">{language === 'fr' ? 'boîte' : 'box'}</option>
                     </select>
 
                     <input
                       type="number"
                       step="any"
                       className="form-control"
-                      placeholder="Prix unit."
+                      placeholder={language === 'fr' ? 'Prix unit.' : 'Unit price'}
                       style={{ padding: '0.5rem 0.4rem', width: '100%' }}
                       value={item.unitPrice || ''}
                       onChange={(e) => updateItemField(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
@@ -1059,7 +1073,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       type="number"
                       step="any"
                       className="form-control"
-                      placeholder="Total HT"
+                      placeholder={language === 'fr' ? 'Total HT' : 'Total (Net)'}
                       style={{ padding: '0.5rem 0.4rem', width: '100%' }}
                       value={item.totalPrice || ''}
                       onChange={(e) => updateItemField(idx, 'totalPrice', parseFloat(e.target.value) || 0)}
@@ -1069,7 +1083,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       type="number"
                       step="0.1"
                       className="form-control"
-                      placeholder="Taxe"
+                      placeholder={language === 'fr' ? 'Taxe' : 'Tax'}
                       style={{ padding: '0.5rem 0.4rem', width: '100%' }}
                       value={item.taxRate || ''}
                       onChange={(e) => updateItemField(idx, 'taxRate', parseFloat(e.target.value) || 0)}
@@ -1079,7 +1093,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       type="number"
                       step="0.01"
                       className="form-control"
-                      placeholder="Rabais"
+                      placeholder={language === 'fr' ? 'Rabais' : 'Discount'}
                       style={{ padding: '0.5rem 0.4rem', width: '100%' }}
                       value={item.discount || ''}
                       onChange={(e) => updateItemField(idx, 'discount', parseFloat(e.target.value) || 0)}
@@ -1109,25 +1123,25 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', width: '220px', fontSize: '0.85rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'hsl(var(--muted))' }}>Sous-total:</span>
+                  <span style={{ color: 'hsl(var(--muted))' }}>{t('inv.form.summary.subtotal')}:</span>
                   <span>{formTotals.subtotal.toFixed(2)} {user?.currency || '$'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'hsl(var(--muted))' }}>Remises:</span>
+                  <span style={{ color: 'hsl(var(--muted))' }}>{t('inv.form.summary.discounts')}:</span>
                   <span style={{ color: 'hsl(var(--success))' }}>- {formTotals.discounts.toFixed(2)} {user?.currency || '$'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'hsl(var(--muted))' }}>Taxes:</span>
+                  <span style={{ color: 'hsl(var(--muted))' }}>{t('inv.form.summary.taxes')}:</span>
                   <span>+ {formTotals.taxes.toFixed(2)} {user?.currency || '$'}</span>
                 </div>
                 {formTotals.globalDiscounts > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'hsl(var(--muted))' }}>Fidélité / Autre:</span>
+                    <span style={{ color: 'hsl(var(--muted))' }}>{language === 'fr' ? 'Fidélité / Autre:' : 'Loyalty / Other:'}</span>
                     <span style={{ color: 'hsl(var(--success))' }}>- {formTotals.globalDiscounts.toFixed(2)} {user?.currency || '$'}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '1px solid hsl(var(--card-border))', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
-                  <span>Total Net:</span>
+                  <span>{t('inv.form.summary.net')}:</span>
                   <span style={{ color: 'hsl(var(--primary))', fontSize: '1rem' }}>{formTotals.total.toFixed(2)} {user?.currency || '$'}</span>
                 </div>
               </div>
@@ -1138,27 +1152,22 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
           {/* Actions footer */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
             <button type="button" onClick={() => { resetForm(); setView('list'); }} className="btn btn-secondary">
-              Annuler
+              {t('inv.form.btn.cancel')}
             </button>
             <button type="submit" className="btn btn-primary">
-              {editingInvoice ? 'Enregistrer les modifications' : 'Enregistrer la facture'}
+              {editingInvoice ? t('inv.form.btn.update') : t('inv.form.btn.save')}
             </button>
           </div>
         </form>
 
-        {/* Datalist for autocomplete suggestions */}
-        <datalist id="products-datalist">
-          {uniqueProducts.map((p, pIdx) => (
-            <option key={pIdx} value={p.productName} />
-          ))}
-        </datalist>
+
 
         {isStoreModalOpen && createPortal(
           <div className="modal-overlay" onClick={() => setIsStoreModalOpen(false)}>
             <div className="modal-content animate-scale-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
               <div className="modal-header">
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                  Ajouter un nouveau magasin
+                  {t('store.modal.add')}
                 </h2>
                 <button type="button" onClick={() => setIsStoreModalOpen(false)} className="btn btn-ghost" style={{ padding: '0.4rem', borderRadius: '50%', color: 'white' }}>
                   <Plus size={20} style={{ transform: 'rotate(45deg)' }} />
@@ -1168,7 +1177,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               <form onSubmit={handleCreateStore}>
                 <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Nom du magasin *</label>
+                    <label>{t('store.modal.label.name')}</label>
                     <input
                       type="text"
                       className="form-control"
@@ -1181,7 +1190,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Pays *</label>
+                      <label>{t('store.modal.label.country')}</label>
                       <Autocomplete
                         value={newStoreCountry}
                         onChange={handleCountryChange}
@@ -1192,7 +1201,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Province / État *</label>
+                      <label>{t('store.modal.label.province')}</label>
                       <Autocomplete
                         value={newStoreProvince}
                         onChange={handleProvinceChange}
@@ -1205,7 +1214,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Ville *</label>
+                      <label>{t('store.modal.label.city')}</label>
                       <Autocomplete
                         value={newStoreCity}
                         onChange={setNewStoreCity}
@@ -1216,21 +1225,21 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Type de commerce</label>
+                      <label>{t('store.modal.type')}</label>
                       <select className="form-control" value={newStoreType} onChange={(e) => setNewStoreType(e.target.value)}>
-                        <option value="SUPERMARKET">Supermarché / Alimentation</option>
-                        <option value="PHARMACY">Pharmacie</option>
-                        <option value="GAS_STATION">Station-service / Essence</option>
-                        <option value="TRANSPORT">Transport</option>
-                        <option value="RETAIL">Vente au détail</option>
-                        <option value="RESTAU">Restaurant / Café</option>
-                        <option value="OTHER">Autre</option>
+                        <option value="SUPERMARKET">{t('store.type.supermarket')}</option>
+                        <option value="PHARMACY">{t('store.type.pharmacy')}</option>
+                        <option value="GAS_STATION">{t('store.type.gas_station')}</option>
+                        <option value="TRANSPORT">{t('store.type.transport')}</option>
+                        <option value="RETAIL">{t('store.type.retail')}</option>
+                        <option value="RESTAU">{t('store.type.restau')}</option>
+                        <option value="OTHER">{t('store.type.other')}</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label>Adresse postale (facultatif)</label>
+                    <label>{t('store.modal.address')}</label>
                     <input
                       type="text"
                       className="form-control"
@@ -1242,7 +1251,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Téléphone (facultatif)</label>
+                      <label>{t('store.modal.phone_opt')}</label>
                       <input
                         type="text"
                         className="form-control"
@@ -1253,7 +1262,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label>Site Web (facultatif)</label>
+                      <label>{t('store.modal.web_opt')}</label>
                       <input
                         type="url"
                         className="form-control"
@@ -1267,10 +1276,10 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
 
                 <div className="modal-footer" style={{ padding: '1rem 1.5rem' }}>
                   <button type="button" onClick={() => setIsStoreModalOpen(false)} className="btn btn-secondary">
-                    Annuler
+                    {t('store.modal.btn.cancel')}
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={storeFormLoading}>
-                    {storeFormLoading ? 'Enregistrement...' : 'Créer le magasin'}
+                    {storeFormLoading ? t('store.modal.saving') : t('store.modal.btn.create')}
                   </button>
                 </div>
               </form>
@@ -1295,24 +1304,28 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               <ArrowLeft size={16} />
             </button>
             <div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Détails de la Facture</h1>
-              <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Visualisation complète des produits achetés et de la ventilation.</p>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('inv.details.title')}</h1>
+              <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>
+                {language === 'fr' 
+                  ? 'Visualisation complète des produits achetés et de la ventilation.' 
+                  : 'Complete view of purchased items and totals breakdown.'}
+              </p>
             </div>
           </div>
 
           <div className="flex-header-actions">
             <button onClick={() => openEditPage(selectedInvoice)} className="btn btn-secondary">
               <Edit size={16} />
-              Modifier
+              {language === 'fr' ? 'Modifier' : 'Edit'}
             </button>
             <button onClick={() => window.print()} className="btn btn-secondary">
               <Printer size={16} />
-              Imprimer PDF
+              {language === 'fr' ? 'Imprimer PDF' : 'Print PDF'}
             </button>
             {user?.role === 'ADMIN' && (
               <button onClick={() => handleDeleteInvoice(selectedInvoice.id)} className="btn btn-danger">
                 <Trash size={16} />
-                Supprimer
+                {language === 'fr' ? 'Supprimer' : 'Delete'}
               </button>
             )}
           </div>
@@ -1333,14 +1346,20 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                 <p style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', marginTop: '0.2rem' }}>{selectedInvoice.store.city}, {selectedInvoice.store.province}</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '1rem', fontWeight: 600, fontFamily: 'monospace' }}>Facture N° : {selectedInvoice.invoiceNumber}</p>
-                <p style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', marginTop: '0.2rem' }}>{new Date(selectedInvoice.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</p>
+                <p style={{ fontSize: '1rem', fontWeight: 600, fontFamily: 'monospace' }}>
+                  {language === 'fr' ? 'Facture N° :' : 'Invoice No:'} {selectedInvoice.invoiceNumber}
+                </p>
+                <p style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', marginTop: '0.2rem' }}>
+                  {new Date(selectedInvoice.date).toLocaleDateString(language, { timeZone: 'UTC' })}
+                </p>
               </div>
             </div>
 
             {/* List of articles */}
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--muted))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>Articles</h3>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--muted))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                {language === 'fr' ? 'Articles' : 'Items'}
+              </h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {selectedInvoice.items.map((item: any, idx: number) => (
@@ -1359,8 +1378,10 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.85rem' }}>{item.quantity} {item.unit.toLowerCase()} × {item.unitPrice.toFixed(2)} {user?.currency || '$'}</div>
-                      {item.discount > 0 && <div style={{ fontSize: '0.75rem', color: 'hsl(var(--success))' }}>Remise: -{item.discount.toFixed(2)} {user?.currency || '$'}</div>}
+                      <div style={{ fontSize: '0.85rem' }}>
+                        {item.quantity} {item.unit.toLowerCase() === 'unit' ? (language === 'fr' ? 'unité' : 'unit') : item.unit.toLowerCase()} × {item.unitPrice.toFixed(2)} {user?.currency || '$'}
+                      </div>
+                      {item.discount > 0 && <div style={{ fontSize: '0.75rem', color: 'hsl(var(--success))' }}>{language === 'fr' ? 'Remise' : 'Discount'}: -{item.discount.toFixed(2)} {user?.currency || '$'}</div>}
                       <div style={{ fontWeight: 600, marginTop: '0.1rem' }}>{item.netPrice.toFixed(2)} {user?.currency || '$'}</div>
                     </div>
                   </div>
@@ -1373,16 +1394,16 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '220px', fontSize: '0.9rem' }}>
                 {selectedInvoice.globalDiscounts > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'hsl(var(--muted))' }}>Rabais global / Fidélité:</span>
+                    <span style={{ color: 'hsl(var(--muted))' }}>{language === 'fr' ? 'Rabais global / Fidélité:' : 'Global Discount / Loyalty:'}</span>
                     <span style={{ color: 'hsl(var(--success))' }}>- {selectedInvoice.globalDiscounts.toFixed(2)} {user?.currency || '$'}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'hsl(var(--muted))' }}>Taxes cumulées:</span>
+                  <span style={{ color: 'hsl(var(--muted))' }}>{t('inv.details.taxes')}:</span>
                   <span>{selectedInvoice.totalTaxes.toFixed(2)} {user?.currency || '$'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, borderTop: '1px solid hsl(var(--card-border))', paddingTop: '0.5rem', marginTop: '0.3rem', fontSize: '1.15rem' }}>
-                  <span>Total Net:</span>
+                  <span>{t('inv.details.net')}:</span>
                   <span style={{ color: 'hsl(var(--primary))' }}>{selectedInvoice.totalAmount.toFixed(2)} {user?.currency || '$'}</span>
                 </div>
               </div>
@@ -1392,21 +1413,37 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
           {/* Sidebar Info Card */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: '1 1 250px', minWidth: '250px' }}>
             <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.5rem' }}>Métadonnées</h3>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--muted))', borderBottom: '1px solid hsl(var(--card-border))', paddingBottom: '0.5rem' }}>
+                {language === 'fr' ? 'Métadonnées' : 'Metadata'}
+              </h3>
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
                 <CreditCard size={16} style={{ color: 'hsl(var(--muted))' }} />
-                <span>Mode : <strong style={{ color: 'white' }}>{selectedInvoice.paymentMode}</strong></span>
+                <span>{language === 'fr' ? 'Mode :' : 'Mode:'} <strong style={{ color: 'white' }}>
+                  {selectedInvoice.paymentMode === 'CASH' && t('set.pay.cash')}
+                  {selectedInvoice.paymentMode === 'DEBIT_CARD' && t('set.pay.debit_card')}
+                  {selectedInvoice.paymentMode === 'CREDIT_CARD' && t('set.pay.credit_card')}
+                  {selectedInvoice.paymentMode === 'WIRE_TRANSFER' && t('set.pay.wire_transfer')}
+                  {selectedInvoice.paymentMode === 'OTHER' && t('set.pay.other')}
+                </strong></span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
                 <Calendar size={16} style={{ color: 'hsl(var(--muted))' }} />
-                <span>Saisi par : <strong style={{ color: 'white' }}>{selectedInvoice.user?.name || 'Utilisateur'}</strong></span>
+                <span>{language === 'fr' ? 'Saisi par :' : 'Entered by:'} <strong style={{ color: 'white' }}>{selectedInvoice.user?.name || 'Utilisateur'}</strong></span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
                 <Tag size={16} style={{ color: 'hsl(var(--muted))' }} />
-                <span>Type de commerce : <strong style={{ color: 'white' }}>{selectedInvoice.store.type}</strong></span>
+                <span>{language === 'fr' ? 'Type de commerce :' : 'Business Type:'} <strong style={{ color: 'white' }}>
+                  {selectedInvoice.store.type === 'SUPERMARKET' && t('store.type.supermarket')}
+                  {selectedInvoice.store.type === 'PHARMACY' && t('store.type.pharmacy')}
+                  {selectedInvoice.store.type === 'GAS_STATION' && t('store.type.gas_station')}
+                  {selectedInvoice.store.type === 'TRANSPORT' && t('store.type.transport')}
+                  {selectedInvoice.store.type === 'RETAIL' && t('store.type.retail')}
+                  {selectedInvoice.store.type === 'RESTAU' && t('store.type.restau')}
+                  {selectedInvoice.store.type === 'OTHER' && t('store.type.other')}
+                </strong></span>
               </div>
             </div>
 
@@ -1414,7 +1451,7 @@ export const Invoices: React.FC<{ initialView?: 'list' | 'add' | 'detail' }> = (
               <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <MessageSquare size={16} />
-                  Commentaires
+                  {language === 'fr' ? 'Commentaires' : 'Comments'}
                 </h3>
                 <p style={{ fontSize: '0.85rem', fontStyle: 'italic', color: 'hsl(var(--foreground) / 0.9)', lineHeight: 1.4 }}>
                   {selectedInvoice.comments}

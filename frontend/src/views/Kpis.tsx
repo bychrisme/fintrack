@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
+import { Autocomplete } from '../components/Autocomplete';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -26,6 +28,7 @@ interface TrendChartProps {
 
 const TrendChart: React.FC<TrendChartProps> = ({ data, currency }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -98,7 +101,7 @@ const TrendChart: React.FC<TrendChartProps> = ({ data, currency }) => {
     // Create series
     const series = chart.series.push(
       am5xy.LineSeries.new(root, {
-        name: "Dépenses",
+        name: t('kpi.spend.evolution'),
         xAxis: xAxis,
         yAxis: yAxis,
         valueYField: "amount",
@@ -205,6 +208,7 @@ interface CategoryChartProps {
 
 const CategoryChart: React.FC<CategoryChartProps> = ({ data, currency }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!chartRef.current || !data || data.length === 0) return;
@@ -283,7 +287,7 @@ const CategoryChart: React.FC<CategoryChartProps> = ({ data, currency }) => {
     // Create series
     const series = chart.series.push(
       am5xy.ColumnSeries.new(root, {
-        name: "Catégories",
+        name: t('kpi.tab.categories'),
         xAxis: xAxis,
         yAxis: yAxis,
         valueYField: "amount",
@@ -404,6 +408,7 @@ interface ProductHistoryChartProps {
 
 const ProductHistoryChart: React.FC<ProductHistoryChartProps> = ({ data, currency }) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (!chartRef.current || !data || data.length === 0) return;
@@ -436,7 +441,7 @@ const ProductHistoryChart: React.FC<ProductHistoryChartProps> = ({ data, currenc
 
     // Prepare chart data
     const chartData = data.map(item => {
-      const formattedDate = new Date(item.date).toLocaleDateString('fr-FR', { 
+      const formattedDate = new Date(item.date).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', { 
         day: 'numeric', 
         month: 'short',
         timeZone: 'UTC'
@@ -508,13 +513,13 @@ const ProductHistoryChart: React.FC<ProductHistoryChartProps> = ({ data, currenc
     // Create Column Series for Quantities
     const quantitySeries = chart.series.push(
       am5xy.ColumnSeries.new(root, {
-        name: "Quantité achetée",
+        name: t('kpi.productDetail.qty_series'),
         xAxis: xAxis,
         yAxis: quantityAxis,
         valueYField: "quantity",
         categoryXField: "label",
         tooltip: am5.Tooltip.new(root, {
-          labelText: "Quantité : {valueY} {unit}"
+          labelText: `${t('kpi.productDetail.table.qty')} : {valueY} {unit}`
         })
       })
     );
@@ -531,13 +536,13 @@ const ProductHistoryChart: React.FC<ProductHistoryChartProps> = ({ data, currenc
     // Create Line Series for Unit Price
     const priceSeries = chart.series.push(
       am5xy.LineSeries.new(root, {
-        name: "Prix unitaire",
+        name: t('kpi.productDetail.price_series'),
         xAxis: xAxis,
         yAxis: priceAxis,
         valueYField: "unitPrice",
         categoryXField: "label",
         tooltip: am5.Tooltip.new(root, {
-          labelText: `Prix unitaire : {valueY} ${currency}`
+          labelText: `${t('kpi.productDetail.price_axis')} : {valueY} ${currency}`
         })
       })
     );
@@ -592,6 +597,7 @@ const ProductHistoryChart: React.FC<ProductHistoryChartProps> = ({ data, currenc
 
 export const Kpis: React.FC = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeSubTab, setActiveSubTab] = useState('evolution');
@@ -656,7 +662,7 @@ export const Kpis: React.FC = () => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 0', gap: '1rem', color: 'hsl(var(--muted))' }}>
         <Loader2 size={36} className="animate-spin" style={{ color: 'hsl(var(--primary))' }} />
-        <span>Calcul et agrégation des indicateurs clés...</span>
+        <span>{t('kpi.loading')}</span>
       </div>
     );
   }
@@ -664,7 +670,7 @@ export const Kpis: React.FC = () => {
   if (!data) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'hsl(var(--card))', borderRadius: 'var(--radius-lg)', border: '1px solid hsl(var(--card-border))', color: 'hsl(var(--muted))' }}>
-        Impossible de charger les indicateurs de performance. Veuillez réessayer plus tard.
+        {t('kpi.error.load')}
       </div>
     );
   }
@@ -672,22 +678,22 @@ export const Kpis: React.FC = () => {
   const { evolutionStats, categoryStats, storeAnalysis, invoiceAnalysis, productAnalysis, taxAnalysis } = data;
 
   const subTabs = [
-    { id: 'evolution', label: 'Évolution & Tendances', icon: <TrendingUp size={18} /> },
-    { id: 'categories', label: 'Postes de Dépense', icon: <Tag size={18} /> },
-    { id: 'stores', label: 'Analyse des Magasins', icon: <Store size={18} /> },
-    { id: 'invoices', label: 'Analyse des Factures', icon: <Receipt size={18} /> },
-    { id: 'products', label: 'Articles & Tarifs', icon: <ShoppingBag size={18} /> },
-    { id: 'inflation', label: 'Inflation Personnelle', icon: <Percent size={18} /> },
-    { id: 'taxes', label: 'TVA & Taxes', icon: <DollarSign size={18} /> },
-    { id: 'productDetail', label: 'Suivi par Article', icon: <Search size={18} /> },
+    { id: 'evolution', label: t('kpi.tab.evolution'), icon: <TrendingUp size={18} /> },
+    { id: 'categories', label: t('kpi.tab.categories'), icon: <Tag size={18} /> },
+    { id: 'stores', label: t('kpi.tab.stores'), icon: <Store size={18} /> },
+    { id: 'invoices', label: t('kpi.tab.invoices'), icon: <Receipt size={18} /> },
+    { id: 'products', label: t('kpi.tab.products'), icon: <ShoppingBag size={18} /> },
+    { id: 'inflation', label: t('kpi.tab.inflation'), icon: <Percent size={18} /> },
+    { id: 'taxes', label: t('kpi.tab.taxes'), icon: <DollarSign size={18} /> },
+    { id: 'productDetail', label: t('kpi.tab.productDetail'), icon: <Search size={18} /> },
   ];
 
   return (
     <div className="animate-fade-in">
       <div className="flex-header">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Indicateurs de Performance (KPI)</h1>
-          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>Analyses avancées sur l'évolution de vos finances et vos habitudes de consommation.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{t('kpi.title')}</h1>
+          <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>{t('kpi.subtitle')}</p>
         </div>
       </div>
 
@@ -742,23 +748,23 @@ export const Kpis: React.FC = () => {
           {activeSubTab === 'evolution' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="stat-card" style={{ borderLeft: '4px solid hsl(var(--primary))' }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.25rem' }}>Variation Mensuelle</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.25rem' }}>{t('kpi.spend.evolution.monthly')}</h2>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Dépenses ce mois-ci</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.spend.this_month')}</div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                       {evolutionStats.thisMonthSpent.toFixed(2)} {user?.currency || '$'}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Dépenses le mois dernier</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.spend.prev_month')}</div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'hsl(var(--muted))', marginTop: '0.2rem' }}>
                       {evolutionStats.lastMonthSpent.toFixed(2)} {user?.currency || '$'}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Variation</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.spend.monthly_trend')}</div>
                     <div style={{ 
                       fontSize: '1.75rem', 
                       fontWeight: 700, 
@@ -771,13 +777,13 @@ export const Kpis: React.FC = () => {
                 </div>
                 
                 <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', paddingTop: '0.5rem', borderTop: '1px solid hsl(var(--card-border))' }}>
-                  Mois le plus dépensier observé : <strong>{evolutionStats.mostExpensiveMonth.month}</strong> ({evolutionStats.mostExpensiveMonth.amount.toFixed(2)} {user?.currency || '$'})
+                  {t('kpi.spend.max_month')} {language === 'fr' ? 'observé' : 'observed'} : <strong>{evolutionStats.mostExpensiveMonth.month}</strong> ({evolutionStats.mostExpensiveMonth.amount.toFixed(2)} {user?.currency || '$'})
                 </div>
               </div>
 
               {/* Tendance 12 mois */}
               <div className="stat-card">
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Tendance sur 12 Mois</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>{t('kpi.tab.evolution')}</h2>
                 <TrendChart data={evolutionStats.trend12Months} currency={user?.currency || '$'} />
               </div>
             </div>
@@ -787,17 +793,17 @@ export const Kpis: React.FC = () => {
           {activeSubTab === 'categories' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="stat-card">
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Répartition par Catégorie</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>{t('dash.category.breakdown')}</h2>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div className="stat-card" style={{ padding: '1rem', backgroundColor: 'hsl(var(--card-border) / 0.2)' }}>
-                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Catégorie la plus coûteuse</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.categories.most_costly')}</div>
                     <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                       {categoryStats.mostExpensive}
                     </div>
                   </div>
                   <div className="stat-card" style={{ padding: '1rem', backgroundColor: 'hsl(var(--card-border) / 0.2)' }}>
-                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Dépenses cumulées des articles</div>
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.spend.categories')}</div>
                     <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                       {categoryStats.totalSpent.toFixed(2)} {user?.currency || '$'}
                     </div>
@@ -808,7 +814,7 @@ export const Kpis: React.FC = () => {
               </div>
 
               <div className="stat-card">
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.25rem' }}>Détails des Dépenses</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.25rem' }}>{t('dash.overview')}</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {categoryStats.breakdown.map((cat: any, idx: number) => (
                     <div key={idx}>
@@ -848,32 +854,32 @@ export const Kpis: React.FC = () => {
               <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                   <div className="stat-card">
-                    <div className="stat-title">Magasin le plus fréquenté</div>
+                    <div className="stat-title">{t('kpi.store.frequent')}</div>
                     <div className="stat-value" style={{ fontSize: '1.3rem', marginTop: '0.2rem' }}>{storeAnalysis.mostVisited}</div>
-                    <div className="stat-footer">Visité le plus de fois</div>
+                    <div className="stat-footer">{language === 'fr' ? 'Visité le plus de fois' : 'Visited the most times'}</div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-title">Magasin le plus cher (panier)</div>
+                    <div className="stat-title">{t('kpi.store.most_expensive')}</div>
                     <div className="stat-value" style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: 'hsl(var(--destructive))' }}>{storeAnalysis.mostExpensive}</div>
-                    <div className="stat-footer">Ticket moyen le plus élevé</div>
+                    <div className="stat-footer">{language === 'fr' ? 'Ticket moyen le plus élevé' : 'Highest average ticket'}</div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-title">Magasin le plus économique</div>
+                    <div className="stat-title">{t('kpi.store.cheapest')}</div>
                     <div className="stat-value" style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: 'hsl(var(--success))' }}>{storeAnalysis.cheapest}</div>
-                    <div className="stat-footer">Ticket moyen le plus bas</div>
+                    <div className="stat-footer">{language === 'fr' ? 'Ticket moyen le plus bas' : 'Lowest average ticket'}</div>
                   </div>
                 </div>
 
                 <div className="stat-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>Historique par Enseigne</h2>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>{t('kpi.store.history')}</h2>
                     
                     {/* Search Bar for Table */}
                     <div style={{ position: 'relative', width: '260px' }}>
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Filtrer par enseigne..."
+                        placeholder={t('store.filter.search_placeholder')}
                         value={searchStoreKpi}
                         onChange={(e) => {
                           setSearchStoreKpi(e.target.value);
@@ -927,17 +933,17 @@ export const Kpis: React.FC = () => {
                   <div style={{ overflowX: 'auto' }}>
                     {filteredKpiStores.length === 0 ? (
                       <div style={{ padding: '2rem', textAlign: 'center', color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>
-                        Aucune enseigne ne correspond à votre recherche.
+                        {t('store.no_match')}
                       </div>
                     ) : (
                       <>
                         <table className="data-table">
                           <thead>
                             <tr>
-                              <th>Magasin</th>
-                              <th style={{ textAlign: 'center' }}>Nombre de visites</th>
-                              <th style={{ textAlign: 'right' }}>Ticket moyen</th>
-                              <th style={{ textAlign: 'right' }}>Montant total</th>
+                              <th>{t('kpi.store.col.store')}</th>
+                              <th style={{ textAlign: 'center' }}>{t('kpi.store.col.visits')}</th>
+                              <th style={{ textAlign: 'right' }}>{t('kpi.store.col.avg')}</th>
+                              <th style={{ textAlign: 'right' }}>{t('kpi.store.col.total')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -955,7 +961,7 @@ export const Kpis: React.FC = () => {
                         {/* Pagination for Store KPI Table */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', flexWrap: 'wrap', gap: '1rem', borderTop: '1px solid hsl(var(--card-border) / 0.5)', paddingTop: '1rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>
-                            <span>Afficher</span>
+                            <span>{t('pag.show')}</span>
                             <select 
                               value={storeKpiPageSize} 
                               onChange={(e) => {
@@ -969,11 +975,14 @@ export const Kpis: React.FC = () => {
                               <option value={10}>10</option>
                               <option value={20}>20</option>
                             </select>
-                            <span>lignes</span>
+                            <span>{t('pag.lines_per_page')}</span>
                           </div>
 
                           <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>
-                            Affichage de {filteredKpiStores.length > 0 ? (currentStoreKpiPage - 1) * storeKpiPageSize + 1 : 0} à {Math.min(currentStoreKpiPage * storeKpiPageSize, filteredKpiStores.length)} sur {filteredKpiStores.length} magasins
+                            {t('pag.display_stores')
+                              .replace('{start}', (filteredKpiStores.length > 0 ? (currentStoreKpiPage - 1) * storeKpiPageSize + 1 : 0).toString())
+                              .replace('{end}', Math.min(currentStoreKpiPage * storeKpiPageSize, filteredKpiStores.length).toString())
+                              .replace('{total}', filteredKpiStores.length.toString())}
                           </div>
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -983,10 +992,10 @@ export const Kpis: React.FC = () => {
                               onClick={() => setCurrentStoreKpiPage(currentStoreKpiPage - 1)}
                               style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
                             >
-                              Précédent
+                              {t('pag.prev')}
                             </button>
                             <span style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>
-                              Page {currentStoreKpiPage} sur {totalKpiStorePages || 1}
+                              {t('pag.page_of').replace('{current}', currentStoreKpiPage.toString()).replace('{total}', (totalKpiStorePages || 1).toString())}
                             </span>
                             <button 
                               className="btn btn-ghost" 
@@ -994,7 +1003,7 @@ export const Kpis: React.FC = () => {
                               onClick={() => setCurrentStoreKpiPage(currentStoreKpiPage + 1)}
                               style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
                             >
-                              Suivant
+                              {t('pag.next')}
                             </button>
                           </div>
                         </div>
@@ -1011,30 +1020,30 @@ export const Kpis: React.FC = () => {
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 <div className="stat-card">
-                  <div className="stat-title">Factures Enregistrées</div>
+                  <div className="stat-title">{t('kpi.invoice.total')}</div>
                   <div className="stat-value">{invoiceAnalysis.totalCount}</div>
-                  <div className="stat-footer">Total cumulé</div>
+                  <div className="stat-footer">{t('dash.kpi.cumulative.footer')}</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-title">Panier Moyen</div>
+                  <div className="stat-title">{t('kpi.invoice.average')}</div>
                   <div className="stat-value">{invoiceAnalysis.averageAmount.toFixed(2)} {user?.currency || '$'}</div>
-                  <div className="stat-footer">Par facture</div>
+                  <div className="stat-footer">{language === 'fr' ? 'Par facture' : 'Per invoice'}</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-title">Plus grosse dépense</div>
+                  <div className="stat-title">{t('kpi.invoice.max')}</div>
                   <div className="stat-value" style={{ color: 'hsl(var(--destructive))' }}>{invoiceAnalysis.largest.toFixed(2)} {user?.currency || '$'}</div>
-                  <div className="stat-footer">Facture maximale</div>
+                  <div className="stat-footer">{t('kpi.invoice.max')}</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-title">Plus petite dépense</div>
+                  <div className="stat-title">{t('kpi.invoice.min')}</div>
                   <div className="stat-value" style={{ color: 'hsl(var(--success))' }}>{invoiceAnalysis.smallest.toFixed(2)} {user?.currency || '$'}</div>
-                  <div className="stat-footer">Facture minimale</div>
+                  <div className="stat-footer">{t('kpi.invoice.min')}</div>
                 </div>
               </div>
 
               {/* Invoices by month */}
               <div className="stat-card">
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>Nombre de Factures par Mois</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem' }}>{t('kpi.invoice.monthly_dist')}</h2>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {invoiceAnalysis.monthlyCountTrend.map((m: any, idx: number) => {
@@ -1069,18 +1078,18 @@ export const Kpis: React.FC = () => {
           {activeSubTab === 'products' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="stat-card">
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Statistiques Articles (Top 10)</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>{t('kpi.product.stats')}</h2>
                 
                 <div style={{ overflowX: 'auto' }}>
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>Nom du produit</th>
-                        <th style={{ textAlign: 'center' }}>Quantité totale</th>
-                        <th style={{ textAlign: 'right' }}>Prix moyen</th>
-                        <th style={{ textAlign: 'right' }}>Dernier prix</th>
-                        <th style={{ textAlign: 'right' }}>Prix Min</th>
-                        <th style={{ textAlign: 'right' }}>Prix Max</th>
+                        <th>{t('kpi.product.col.name')}</th>
+                        <th style={{ textAlign: 'center' }}>{t('cons.frequent.col.qty')}</th>
+                        <th style={{ textAlign: 'right' }}>{t('kpi.product.col.avg')}</th>
+                        <th style={{ textAlign: 'right' }}>{t('kpi.product.col.last')}</th>
+                        <th style={{ textAlign: 'right' }}>{t('kpi.product.col.min')}</th>
+                        <th style={{ textAlign: 'right' }}>{t('kpi.product.col.max')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1105,12 +1114,12 @@ export const Kpis: React.FC = () => {
           {activeSubTab === 'inflation' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="stat-card" style={{ borderLeft: '4px solid hsl(var(--warning))' }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Panier d'Inflation</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{t('kpi.inflation.evolution')}</h2>
                 <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                   {productAnalysis.priceEvolution.basketInflation > 0 ? `+${productAnalysis.priceEvolution.basketInflation}` : productAnalysis.priceEvolution.basketInflation}%
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))', marginTop: '0.25rem' }}>
-                  Taux d'évolution moyen des prix observés sur les articles achetés plusieurs fois.
+                  {t('kpi.inflation.desc')}
                 </div>
               </div>
 
@@ -1120,10 +1129,10 @@ export const Kpis: React.FC = () => {
                 <div className="stat-card">
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'hsl(var(--destructive))', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <TrendingUp size={16} />
-                    Plus fortes hausses de prix
+                    {t('kpi.inflation.rises')}
                   </h3>
                   {productAnalysis.priceEvolution.increases.length === 0 ? (
-                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>Aucune hausse observée.</div>
+                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>{language === 'fr' ? 'Aucune hausse observée.' : 'No increases observed.'}</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {productAnalysis.priceEvolution.increases.map((item: any, idx: number) => (
@@ -1131,7 +1140,7 @@ export const Kpis: React.FC = () => {
                           <div>
                             <span style={{ fontWeight: 600 }}>{item.productName}</span>
                             <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', marginTop: '0.1rem' }}>
-                              Initial : {item.firstPrice.toFixed(2)} {user?.currency || '$'} → Actuel : {item.latestPrice.toFixed(2)} {user?.currency || '$'}
+                              Initial : {item.firstPrice.toFixed(2)} {user?.currency || '$'} → {language === 'fr' ? 'Actuel' : 'Current'} : {item.latestPrice.toFixed(2)} {user?.currency || '$'}
                             </div>
                           </div>
                           <span style={{ fontWeight: 700, color: 'hsl(var(--destructive))' }}>+{item.percentageChange}%</span>
@@ -1145,10 +1154,10 @@ export const Kpis: React.FC = () => {
                 <div className="stat-card">
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'hsl(var(--success))', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <TrendingDown size={16} />
-                    Plus fortes baisses de prix
+                    {t('kpi.inflation.drops')}
                   </h3>
                   {productAnalysis.priceEvolution.decreases.length === 0 ? (
-                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>Aucune baisse observée.</div>
+                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>{language === 'fr' ? 'Aucune baisse observée.' : 'No decreases observed.'}</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {productAnalysis.priceEvolution.decreases.map((item: any, idx: number) => (
@@ -1156,7 +1165,7 @@ export const Kpis: React.FC = () => {
                           <div>
                             <span style={{ fontWeight: 600 }}>{item.productName}</span>
                             <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))', marginTop: '0.1rem' }}>
-                              Initial : {item.firstPrice.toFixed(2)} {user?.currency || '$'} → Actuel : {item.latestPrice.toFixed(2)} {user?.currency || '$'}
+                              Initial : {item.firstPrice.toFixed(2)} {user?.currency || '$'} → {language === 'fr' ? 'Actuel' : 'Current'} : {item.latestPrice.toFixed(2)} {user?.currency || '$'}
                             </div>
                           </div>
                           <span style={{ fontWeight: 700, color: 'hsl(var(--success))' }}>{item.percentageChange}%</span>
@@ -1175,14 +1184,14 @@ export const Kpis: React.FC = () => {
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 <div className="stat-card">
-                  <div className="stat-title">TVA cumulée payée</div>
+                  <div className="stat-title">{t('kpi.taxes.total')}</div>
                   <div className="stat-value">{taxAnalysis.totalTaxesPaid.toFixed(2)} {user?.currency || '$'}</div>
-                  <div className="stat-footer">Toutes factures confondues</div>
+                  <div className="stat-footer">{t('dash.kpi.cumulative.footer')}</div>
                 </div>
                 <div className="stat-card">
-                  <div className="stat-title">Part des taxes</div>
+                  <div className="stat-title">{t('kpi.taxes.share')}</div>
                   <div className="stat-value">{taxAnalysis.taxPercentage}%</div>
-                  <div className="stat-footer">Du montant total des dépenses</div>
+                  <div className="stat-footer">{t('dash.kpi.cumulative.footer')}</div>
                 </div>
               </div>
 
@@ -1190,9 +1199,9 @@ export const Kpis: React.FC = () => {
                 
                 {/* Taxes par catégorie */}
                 <div className="stat-card">
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>TVA par Catégorie</h3>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>{t('kpi.taxes.by_category')}</h3>
                   {taxAnalysis.byCategory.length === 0 ? (
-                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>Aucune taxe.</div>
+                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>{language === 'fr' ? 'Aucune taxe.' : 'No taxes.'}</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {taxAnalysis.byCategory.map((item: any, idx: number) => (
@@ -1207,9 +1216,9 @@ export const Kpis: React.FC = () => {
 
                 {/* Taxes par magasin */}
                 <div className="stat-card">
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>TVA par Magasin</h3>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '1rem' }}>{t('kpi.taxes.by_store')}</h3>
                   {taxAnalysis.byStore.length === 0 ? (
-                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>Aucune taxe.</div>
+                    <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '1rem 0' }}>{language === 'fr' ? 'Aucune taxe.' : 'No taxes.'}</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {taxAnalysis.byStore.map((item: any, idx: number) => (
@@ -1229,7 +1238,7 @@ export const Kpis: React.FC = () => {
           {activeSubTab === 'productDetail' && (
             <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="stat-card">
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Suivi de Consommation par Article</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>{t('kpi.productDetail.title')}</h2>
                 
                 {/* Search Bar inside tab */}
                 <form onSubmit={handleProductSearch} style={{
@@ -1240,16 +1249,14 @@ export const Kpis: React.FC = () => {
                   width: '100%'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, position: 'relative' }}>
-                    <Search size={18} style={{ color: 'hsl(var(--muted))', position: 'absolute', left: '0.75rem' }} />
-                    <input
-                      type="text"
-                      list="kpis-products-datalist"
-                      className="form-control"
-                      style={{ paddingLeft: '2.5rem', width: '100%', backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--card-border))', color: 'white' }}
-                      placeholder="Rechercher un article (ex: Lait 2L)..."
+                    <Search size={18} style={{ color: 'hsl(var(--muted))', position: 'absolute', left: '0.75rem', zIndex: 5 }} />
+                    <Autocomplete
                       value={searchProduct}
-                      onChange={(e) => setSearchProduct(e.target.value)}
+                      onChange={setSearchProduct}
+                      suggestions={productSuggestions.map((p: any) => p.productName)}
+                      placeholder={t('kpi.productDetail.search')}
                       required
+                      inputStyle={{ paddingLeft: '2.5rem', paddingRight: searchProduct ? '3.5rem' : '2.5rem' }}
                     />
                     {searchProduct && (
                       <button
@@ -1261,7 +1268,7 @@ export const Kpis: React.FC = () => {
                         }}
                         style={{
                           position: 'absolute',
-                          right: '0.5rem',
+                          right: '2.2rem',
                           background: 'transparent',
                           border: 'none',
                           color: 'hsl(var(--muted))',
@@ -1270,47 +1277,48 @@ export const Kpis: React.FC = () => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           padding: '0.25rem',
-                          borderRadius: '50%'
+                          borderRadius: '50%',
+                          zIndex: 5
                         }}
                       >
                         <X size={14} />
                       </button>
                     )}
                   </div>
-                  <button type="submit" className="btn btn-primary">Rechercher</button>
+                  <button type="submit" className="btn btn-primary">{t('comp.btn.search')}</button>
                 </form>
 
                 {historyLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', color: 'hsl(var(--muted))' }}>
                     <Loader2 className="animate-spin" size={24} style={{ color: 'hsl(var(--primary))' }} />
-                    <span style={{ marginLeft: '0.5rem' }}>Chargement de l'historique...</span>
+                    <span style={{ marginLeft: '0.5rem' }}>{language === 'fr' ? 'Chargement de l\'historique...' : 'Loading history...'}</span>
                   </div>
                 ) : !historySearched ? (
                   <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))', border: '1px dashed hsl(var(--card-border))', borderRadius: 'var(--radius-md)' }}>
-                    Saisissez ou sélectionnez un article ci-dessus pour afficher son historique de consommation.
+                    {t('kpi.productDetail.placeholder')}
                   </div>
                 ) : historyData.length === 0 ? (
                   <div style={{ padding: '3rem', textAlign: 'center', color: 'hsl(var(--muted))', border: '1px dashed hsl(var(--card-border))', borderRadius: 'var(--radius-md)' }}>
-                    Aucun historique d'achat trouvé pour cet article.
+                    {t('kpi.productDetail.no_data')}
                   </div>
                 ) : (
                   <div>
                     {/* Key Stats for the selected product */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                       <div className="stat-card" style={{ padding: '1rem', backgroundColor: 'hsl(var(--card-border) / 0.2)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Achats analysés</div>
+                        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.productDetail.purchases_count')}</div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                           {historyData.length} (20 max)
                         </div>
                       </div>
                       <div className="stat-card" style={{ padding: '1rem', backgroundColor: 'hsl(var(--card-border) / 0.2)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Quantité totale</div>
+                        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.productDetail.qty_purchased')}</div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
-                          {historyData.reduce((sum, item) => sum + item.quantity, 0).toFixed(2)} {historyData[0]?.unit || 'unité(s)'}
+                          {historyData.reduce((sum, item) => sum + item.quantity, 0).toFixed(2)} {historyData[0]?.unit || (language === 'fr' ? 'unité(s)' : 'unit(s)')}
                         </div>
                       </div>
                       <div className="stat-card" style={{ padding: '1rem', backgroundColor: 'hsl(var(--card-border) / 0.2)' }}>
-                        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>Prix unitaire moyen</div>
+                        <div style={{ fontSize: '0.8rem', color: 'hsl(var(--muted))' }}>{t('kpi.productDetail.avg_price')}</div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                           {(historyData.reduce((sum, item) => sum + item.unitPrice, 0) / historyData.length).toFixed(2)} {user?.currency || '$'}
                         </div>
@@ -1318,7 +1326,7 @@ export const Kpis: React.FC = () => {
                     </div>
 
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'hsl(var(--primary))', marginBottom: '1rem' }}>
-                      Évolution quantité vs prix unitaire (20 derniers achats)
+                      {t('kpi.productDetail.recent_purchases').replace('{product}', searchProduct)}
                     </h3>
                     <ProductHistoryChart data={historyData} currency={user?.currency || '$'} />
                   </div>

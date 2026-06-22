@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
 
 export const Auth: React.FC = () => {
   const { login, register } = useAuth();
+  const { t } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +24,7 @@ export const Auth: React.FC = () => {
         await register({ email, password, name });
       }
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+      setError(err.message || t('common.error.occurred'));
     } finally {
       setLoading(false);
     }
@@ -56,7 +58,7 @@ export const Auth: React.FC = () => {
             FinTrack
           </h1>
           <p style={{ fontSize: '0.9rem', color: 'hsl(var(--muted))' }}>
-            {isLogin ? 'Connectez-vous pour gérer vos dépenses' : 'Créez un compte famille ou utilisateur'}
+            {isLogin ? t('auth.subtitle.login') : t('auth.subtitle.register')}
           </p>
         </div>
 
@@ -77,7 +79,7 @@ export const Auth: React.FC = () => {
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div className="form-group">
-              <label htmlFor="name">Nom Complet</label>
+              <label htmlFor="name">{t('auth.label.name')}</label>
               <input
                 id="name"
                 type="text"
@@ -91,7 +93,7 @@ export const Auth: React.FC = () => {
           )}
 
           <div className="form-group">
-            <label htmlFor="email">Adresse Email</label>
+            <label htmlFor="email">{t('auth.label.email')}</label>
             <input
               id="email"
               type="email"
@@ -104,7 +106,7 @@ export const Auth: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Mot de passe</label>
+            <label htmlFor="password">{t('auth.label.password')}</label>
             <input
               id="password"
               type="password"
@@ -122,7 +124,7 @@ export const Auth: React.FC = () => {
             style={{ width: '100%', marginTop: '1rem' }}
             disabled={loading}
           >
-            {loading ? 'Chargement...' : isLogin ? 'Se Connecter' : 'Créer un compte'}
+            {loading ? t('common.loading') : isLogin ? t('auth.btn.login') : t('auth.btn.register')}
           </button>
         </form>
 
@@ -136,7 +138,7 @@ export const Auth: React.FC = () => {
               setError('');
             }}
           >
-            {isLogin ? "Pas de compte? Inscrivez-vous" : "Déjà un compte? Connectez-vous"}
+            {isLogin ? t('auth.link.toRegister') : t('auth.link.toLogin')}
           </button>
         </div>
       </div>

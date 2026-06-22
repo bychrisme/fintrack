@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { useLanguage } from '../LanguageContext';
 import { LayoutDashboard, Receipt, Store, Search, LineChart, DollarSign, LogOut, Sun, Moon, Settings as SettingsIcon, Menu, X, Package, BarChart3 } from 'lucide-react';
 import { Dashboard } from '../views/Dashboard';
 import { Invoices } from '../views/Invoices';
@@ -13,6 +14,7 @@ import { Kpis } from '../views/Kpis';
 
 export const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [invoicesInitialView, setInvoicesInitialView] = useState<'list' | 'add'>('list');
   const [theme, setTheme] = useState('dark');
@@ -33,15 +35,15 @@ export const MainLayout: React.FC = () => {
   };
 
   const menuItems = [
-    { id: 'dashboard', label: 'Tableau de bord', icon: <LayoutDashboard size={20} /> },
-    { id: 'kpis', label: 'KPIs & Analyses', icon: <BarChart3 size={20} /> },
-    { id: 'invoices', label: 'Factures & OCR', icon: <Receipt size={20} /> },
-    { id: 'stores', label: 'Magasins', icon: <Store size={20} /> },
-    { id: 'articles', label: 'Articles', icon: <Package size={20} /> },
-    { id: 'prices', label: 'Comparateur Prix', icon: <Search size={20} /> },
-    { id: 'consumption', label: 'Consommation & Alertes', icon: <LineChart size={20} /> },
-    { id: 'budgets', label: 'Budgets', icon: <DollarSign size={20} /> },
-    { id: 'settings', label: 'Paramètres', icon: <SettingsIcon size={20} /> },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: <LayoutDashboard size={20} /> },
+    { id: 'kpis', label: t('nav.kpis'), icon: <BarChart3 size={20} /> },
+    { id: 'invoices', label: t('nav.invoices'), icon: <Receipt size={20} /> },
+    { id: 'stores', label: t('nav.stores'), icon: <Store size={20} /> },
+    { id: 'articles', label: t('nav.articles'), icon: <Package size={20} /> },
+    { id: 'prices', label: t('nav.prices'), icon: <Search size={20} /> },
+    { id: 'consumption', label: t('nav.consumption'), icon: <LineChart size={20} /> },
+    { id: 'budgets', label: t('nav.budgets'), icon: <DollarSign size={20} /> },
+    { id: 'settings', label: t('nav.settings'), icon: <SettingsIcon size={20} /> },
   ];
 
   const renderActiveView = () => {
@@ -86,9 +88,65 @@ export const MainLayout: React.FC = () => {
         }}>
           FinTrack
         </span>
-        <button onClick={toggleTheme} className="btn btn-ghost theme-toggle" style={{ padding: '0.5rem', borderRadius: '50%' }}>
-          {theme === 'dark' ? <Sun size={18} style={{ color: '#fbbf24' }} /> : <Moon size={18} style={{ color: '#6366f1' }} />}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {/* Language Toggle Switch */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '20px',
+            padding: '2px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            height: '28px',
+            gap: '2px'
+          }}>
+            <button
+              onClick={() => setLanguage('fr')}
+              style={{
+                border: 'none',
+                background: language === 'fr' ? 'linear-gradient(to right, #3b82f6, #0ea5e9)' : 'transparent',
+                color: language === 'fr' ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                padding: '0 8px',
+                height: '100%',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: language === 'fr' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
+              }}
+            >
+              FR
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              style={{
+                border: 'none',
+                background: language === 'en' ? 'linear-gradient(to right, #3b82f6, #0ea5e9)' : 'transparent',
+                color: language === 'en' ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                padding: '0 8px',
+                height: '100%',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: language === 'en' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
+              }}
+            >
+              EN
+            </button>
+          </div>
+          <button onClick={toggleTheme} className="btn btn-ghost theme-toggle" style={{ padding: '0.5rem', borderRadius: '50%' }}>
+            {theme === 'dark' ? <Sun size={18} style={{ color: '#fbbf24' }} /> : <Moon size={18} style={{ color: '#6366f1' }} />}
+          </button>
+        </div>
       </header>
 
       {/* Sidebar Overlay */}
@@ -110,6 +168,61 @@ export const MainLayout: React.FC = () => {
           </span>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            {/* Language Toggle Switch (desktop only) */}
+            <div className="desktop-only" style={{
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '20px',
+              padding: '2px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              height: '28px',
+              gap: '2px',
+              marginRight: '4px'
+            }}>
+              <button
+                onClick={() => setLanguage('fr')}
+                style={{
+                  border: 'none',
+                  background: language === 'fr' ? 'linear-gradient(to right, #3b82f6, #0ea5e9)' : 'transparent',
+                  color: language === 'fr' ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '0 6px',
+                  height: '100%',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: language === 'fr' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
+                }}
+              >
+                FR
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                style={{
+                  border: 'none',
+                  background: language === 'en' ? 'linear-gradient(to right, #3b82f6, #0ea5e9)' : 'transparent',
+                  color: language === 'en' ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '0.65rem',
+                  fontWeight: 800,
+                  padding: '0 6px',
+                  height: '100%',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: language === 'en' ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
+                }}
+              >
+                EN
+              </button>
+            </div>
             {/* Theme switch (desktop only) */}
             <button onClick={toggleTheme} className="btn btn-ghost theme-toggle desktop-only" style={{ padding: '0.4rem', borderRadius: '50%' }}>
               {theme === 'dark' ? <Sun size={18} style={{ color: '#fbbf24' }} /> : <Moon size={18} style={{ color: '#6366f1' }} />}
@@ -164,12 +277,14 @@ export const MainLayout: React.FC = () => {
         }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'white' }}>{user?.name}</span>
-            <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))' }}>{user?.role === 'ADMIN' ? 'Administrateur' : user?.role === 'FAMILY' ? 'Membre Famille' : 'Utilisateur Simple'}</span>
+            <span style={{ fontSize: '0.75rem', color: 'hsl(var(--muted))' }}>
+              {user?.role === 'ADMIN' ? t('role.admin') : user?.role === 'FAMILY' ? t('role.family') : t('role.user')}
+            </span>
           </div>
 
           <button onClick={logout} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.85rem', padding: '0.6rem' }}>
             <LogOut size={16} />
-            Se déconnecter
+            {t('nav.logout')}
           </button>
         </div>
       </aside>

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../api';
+import { useLanguage } from '../LanguageContext';
+import { Autocomplete } from '../components/Autocomplete';
 import * as Icons from 'lucide-react';
 import { Plus, Edit, Trash, X, Search, Filter, Package, HelpCircle } from 'lucide-react';
 
@@ -11,6 +13,7 @@ const CategoryIcon: React.FC<{ name: string; size?: number; style?: React.CSSPro
 };
 
 export const Products: React.FC = () => {
+  const { t } = useLanguage();
   // Data states
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -81,13 +84,13 @@ export const Products: React.FC = () => {
 
   // Handle product deletion
   const handleDeleteProduct = async (id: string) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer cet article de votre catalogue ?')) return;
+    if (!window.confirm(t('prod.delete.confirm'))) return;
     try {
       setLoading(true);
       await api.products.delete(id);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la suppression de l\'article');
+      alert(err.message || t('prod.error.delete'));
     } finally {
       setLoading(false);
     }
@@ -100,13 +103,13 @@ export const Products: React.FC = () => {
     setErrorMessage('');
 
     if (!name.trim()) {
-      setErrorMessage('Le nom de l\'article est requis');
+      setErrorMessage(t('prod.error.name_required'));
       setFormLoading(false);
       return;
     }
 
     if (!categoryId) {
-      setErrorMessage('Veuillez sélectionner une catégorie');
+      setErrorMessage(t('prod.error.cat_required'));
       setFormLoading(false);
       return;
     }
@@ -125,7 +128,7 @@ export const Products: React.FC = () => {
       setIsModalOpen(false);
       await fetchData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Une erreur est survenue lors de l\'enregistrement');
+      setErrorMessage(err.message || t('prod.error.save'));
     } finally {
       setFormLoading(false);
     }
@@ -150,15 +153,15 @@ export const Products: React.FC = () => {
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Package size={28} style={{ color: 'hsl(var(--primary))' }} />
-            Catalogue des Articles
+            {t('prod.title')}
           </h1>
           <p style={{ color: 'hsl(var(--muted))', fontSize: '0.9rem' }}>
-            Gérez la liste de vos articles récurrents et associez-les à des catégories budgétaires.
+            {t('prod.subtitle')}
           </p>
         </div>
         <button onClick={openAddModal} className="btn btn-primary" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <Plus size={16} />
-          Ajouter un article
+          {t('prod.btn.add')}
         </button>
       </div>
 
@@ -173,7 +176,7 @@ export const Products: React.FC = () => {
             <input
               type="text"
               className="form-control"
-              placeholder="Rechercher un article par son nom..."
+              placeholder={t('prod.filter.search')}
               style={{ paddingLeft: '2.75rem', width: '100%', margin: 0 }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -191,7 +194,7 @@ export const Products: React.FC = () => {
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              <option value="">Toutes les catégories</option>
+              <option value="">{t('prod.filter.cat')}</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -206,7 +209,7 @@ export const Products: React.FC = () => {
       {/* Main Content Table / Empty state */}
       {loading && products.length === 0 ? (
         <div style={{ padding: '4rem', textAlign: 'center', color: 'hsl(var(--muted))' }}>
-          Chargement du catalogue d'articles...
+          {t('prod.loading')}
         </div>
       ) : filteredProducts.length === 0 ? (
         <div style={{
@@ -234,17 +237,17 @@ export const Products: React.FC = () => {
           </div>
           <div>
             <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.25rem' }}>
-              {products.length === 0 ? 'Votre catalogue est vide' : 'Aucun article trouvé'}
+              {products.length === 0 ? t('prod.empty.title') : t('prod.filter.empty')}
             </h3>
             <p style={{ fontSize: '0.85rem' }}>
               {products.length === 0
-                ? 'Commencez à ajouter des articles pour pouvoir les affecter rapidement lors de vos analyses.'
-                : 'Essayez de modifier vos critères de recherche ou de filtre.'}
+                ? t('prod.empty.desc')
+                : t('prod.filter.empty_desc')}
             </p>
           </div>
           {products.length === 0 && (
             <button onClick={openAddModal} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
-              Créer mon premier article
+              {t('prod.empty.btn')}
             </button>
           )}
         </div>
@@ -253,9 +256,9 @@ export const Products: React.FC = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th style={{ width: '45%' }}>Nom de l'article</th>
-                <th style={{ width: '35%' }}>Catégorie</th>
-                <th style={{ width: '20%', textAlign: 'right' }}>Actions</th>
+                <th style={{ width: '45%' }}>{t('prod.table.name')}</th>
+                <th style={{ width: '35%' }}>{t('prod.table.cat')}</th>
+                <th style={{ width: '20%', textAlign: 'right' }}>{t('prod.table.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +283,7 @@ export const Products: React.FC = () => {
                         border: `1px solid ${categoryColor}30`
                       }}>
                         <CategoryIcon name={product.category?.icon} size={14} />
-                        {product.category?.name || 'Sans catégorie'}
+                        {product.category?.name || t('prod.table.cat_none')}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
@@ -289,7 +292,7 @@ export const Products: React.FC = () => {
                           onClick={() => openEditModal(product)}
                           className="btn btn-ghost"
                           style={{ padding: '0.5rem', color: 'hsl(var(--muted))' }}
-                          title="Modifier"
+                          title={t('common.update')}
                         >
                           <Edit size={16} />
                         </button>
@@ -297,7 +300,7 @@ export const Products: React.FC = () => {
                           onClick={() => handleDeleteProduct(product.id)}
                           className="btn btn-ghost"
                           style={{ padding: '0.5rem', color: 'hsl(var(--destructive))' }}
-                          title="Supprimer"
+                          title={t('common.confirm.delete')}
                         >
                           <Trash size={16} />
                         </button>
@@ -321,7 +324,7 @@ export const Products: React.FC = () => {
             gap: '1rem'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
-              <span>Afficher</span>
+              <span>{t('pag.show')}</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -337,11 +340,14 @@ export const Products: React.FC = () => {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span>lignes par page</span>
+              <span>{t('pag.lines_per_page')}</span>
             </div>
             
             <div style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))' }}>
-              Affichage de {filteredProducts.length > 0 ? startIndex + 1 : 0} à {Math.min(endIndex, filteredProducts.length)} sur {filteredProducts.length} articles
+              {t('pag.display_products')
+                .replace('{start}', (filteredProducts.length > 0 ? startIndex + 1 : 0).toString())
+                .replace('{end}', Math.min(endIndex, filteredProducts.length).toString())
+                .replace('{total}', filteredProducts.length.toString())}
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -352,10 +358,10 @@ export const Products: React.FC = () => {
                 className="btn btn-secondary"
                 style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
               >
-                Précédent
+                {t('pag.prev')}
               </button>
               <span style={{ fontSize: '0.85rem', color: 'hsl(var(--muted))', padding: '0 0.5rem' }}>
-                Page {currentPage} sur {totalPages || 1}
+                {t('pag.page_of').replace('{current}', currentPage.toString()).replace('{total}', (totalPages || 1).toString())}
               </span>
               <button
                 type="button"
@@ -364,7 +370,7 @@ export const Products: React.FC = () => {
                 className="btn btn-secondary"
                 style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
               >
-                Suivant
+                {t('pag.next')}
               </button>
             </div>
           </div>
@@ -378,7 +384,7 @@ export const Products: React.FC = () => {
             <div className="modal-header">
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Package size={20} style={{ color: 'hsl(var(--primary))' }} />
-                {selectedProduct ? 'Modifier l\'article' : 'Ajouter un article'}
+                {selectedProduct ? t('prod.modal.edit') : t('prod.modal.add')}
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="btn btn-ghost" style={{ padding: '0.4rem', borderRadius: '50%', color: 'white' }}>
                 <X size={20} />
@@ -403,27 +409,25 @@ export const Products: React.FC = () => {
                 )}
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Nom de l'article *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Ex: Lait Lactantia 2%"
+                  <label>{t('prod.modal.label.name')}</label>
+                  <Autocomplete
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={setName}
+                    suggestions={products.map((p: any) => p.name)}
+                    placeholder="Ex: Lait Lactantia 2%"
                     required
-                    autoFocus
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Catégorie *</label>
+                  <label>{t('prod.modal.label.cat')}</label>
                   <select
                     className="form-control"
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
                     required
                   >
-                    <option value="" disabled>Sélectionner une catégorie</option>
+                    <option value="" disabled>{t('prod.modal.select_cat')}</option>
                     {categories.map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
@@ -433,10 +437,10 @@ export const Products: React.FC = () => {
 
               <div className="modal-footer" style={{ padding: '1rem 1.5rem' }}>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
-                  Annuler
+                  {t('prod.modal.btn.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={formLoading}>
-                  {formLoading ? 'Enregistrement...' : selectedProduct ? 'Enregistrer les modifications' : 'Créer l\'article'}
+                  {formLoading ? t('prod.modal.saving') : selectedProduct ? t('prod.modal.btn.update') : t('prod.modal.btn.create')}
                 </button>
               </div>
             </form>

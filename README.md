@@ -2,6 +2,8 @@
 
 **FinTrack** (anciennement GESFIN) est une application web moderne de suivi des dépenses familiales, d'analyse de l'inflation et de comparaison des prix au détail des articles de consommation courante. L'application intègre un lecteur intelligent de reçus d'achats réels par OCR (Reconnaissance Optique de Caractères).
 
+![Tableau de bord FinTrack](dashboard.png)
+
 ---
 
 ## 🏗️ Architecture du Projet
