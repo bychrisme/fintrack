@@ -140,7 +140,7 @@ export const Dashboard: React.FC<{
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div className="stat-title">{t('dash.items.title')}</div>
-              <div className="stat-value">{kpis.totalItemsCount}</div>
+              <div className="stat-value">{Math.round(kpis.totalItemsCount)}</div>
             </div>
             <div style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: 'hsl(var(--warning) / 0.1)', color: 'hsl(var(--warning))' }}>
               <ShoppingBag size={20} />

@@ -19,6 +19,7 @@ const request = async (path: string, options: RequestInit = {}) => {
   const hasBody = !!options.body;
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       ...getHeaders(hasBody),
       ...options.headers,
@@ -43,6 +44,7 @@ export const api = {
   auth: {
     login: (body: any) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
     register: (body: any) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    logout: () => request('/auth/logout', { method: 'POST' }),
     me: () => request('/auth/me'),
     updateProfile: (body: any) => request('/auth/profile', { method: 'PATCH', body: JSON.stringify(body) }),
     updateSecurity: (body: any) => request('/auth/security', { method: 'PATCH', body: JSON.stringify(body) }),
@@ -110,7 +112,7 @@ export const api = {
 
   // Reports
   reports: {
-    getCSVUrl: (type: string) => `${API_BASE_URL}/reports/export?type=${type}&token=${localStorage.getItem('gesfin_token')}`,
+    getCSVUrl: (type: string) => `${API_BASE_URL}/reports/export?type=${type}`,
     exportCSV: (type: string) => request(`/reports/export?type=${type}`),
   },
 

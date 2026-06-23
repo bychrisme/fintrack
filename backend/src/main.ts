@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import fastifyCookie from '@fastify/cookie';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -9,9 +10,21 @@ async function bootstrap() {
     new FastifyAdapter({ bodyLimit: 52428800 }) as any
   );
 
-  // Enable CORS
+  // Register cookie parser
+  await app.register(fastifyCookie as any, {
+    secret: 'fintrack-cookie-secret-2026',
+  });
+
+  // Enable CORS with credentials support (cannot use '*' when credentials: true)
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+        callback(null, true);
+      } else {
+        // Reflect origin in production to allow browser credentials transmission
+        callback(null, true);
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

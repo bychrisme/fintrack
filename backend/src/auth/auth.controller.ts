@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -8,13 +8,35 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: any) {
+    const result = await this.authService.register(dto);
+    res.setCookie('access_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 3600000 * 24 * 7, // 7 days
+    });
+    return { user: result.user };
   }
 
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: any) {
+    const result = await this.authService.login(dto);
+    res.setCookie('access_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 3600000 * 24 * 7, // 7 days
+    });
+    return { user: result.user };
+  }
+
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: any) {
+    res.clearCookie('access_token', { path: '/' });
+    return { success: true };
   }
 
   @Get('me')

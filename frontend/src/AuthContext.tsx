@@ -27,15 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const bootstrapAuth = async () => {
-      const token = localStorage.getItem('fintrack_token');
-      if (token) {
-        try {
-          const userData = await api.auth.me();
-          setUser(userData);
-        } catch (err) {
-          console.error('Invalid token, logging out...');
-          localStorage.removeItem('fintrack_token');
-        }
+      try {
+        const userData = await api.auth.me();
+        setUser(userData);
+      } catch (err) {
+        console.log('No active session, redirecting to login...');
+        setUser(null);
       }
       setLoading(false);
     };
@@ -44,18 +41,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: any) => {
     const res = await api.auth.login(credentials);
-    localStorage.setItem('fintrack_token', res.token);
     setUser(res.user);
   };
 
   const register = async (data: any) => {
     const res = await api.auth.register(data);
-    localStorage.setItem('fintrack_token', res.token);
     setUser(res.user);
   };
 
-  const logout = () => {
-    localStorage.removeItem('fintrack_token');
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+    } catch (err) {
+      console.error('Error during logout:', err);
+    }
     setUser(null);
   };
 

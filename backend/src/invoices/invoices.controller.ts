@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Re
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto, UpdateInvoiceDto } from './dto/invoice.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('invoices')
 @UseGuards(JwtAuthGuard)
@@ -31,6 +32,7 @@ export class InvoicesController {
     return this.invoicesService.findAll({ search, storeId, categoryId, startDate, endDate, paymentMode }, req.user.id);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('ocr')
   async uploadOCR(@Req() req: any, @Body('image') imageBase64: string, @Body('filename') filename?: string) {
     if (!imageBase64) {
